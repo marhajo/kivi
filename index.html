@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vidanet – Anyagrögzítő</title>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f3f4f6;color:#1f2937;min-height:100vh;font-size:14px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+
+/* ── SETUP SCREEN ── */
+.setup-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(135deg,#fff7f0 0%,#f3f4f6 60%,#f5eeff 100%)}
+.setup-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;
+  padding:40px;width:460px;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.setup-card .brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.setup-card .brand span{font-size:22px;font-weight:800;color:#1f2937}
+.setup-card h2{font-size:15px;font-weight:700;color:#FF7600;text-transform:uppercase;
+  letter-spacing:1.5px;margin-bottom:6px}
+.setup-card p{color:#6b7280;font-size:13px;margin-bottom:24px;line-height:1.6}
+.setup-note{background:#fff7f0;border:1px solid #fde0c0;border-radius:8px;
+  padding:14px 16px;margin-bottom:24px;font-size:12px;color:#92400e;line-height:1.8}
+.setup-note code{background:#ffedd5;padding:2px 6px;border-radius:3px;color:#c2410c;font-family:monospace}
+.setup-field{margin-bottom:16px}
+.setup-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:#6b7280;margin-bottom:6px}
+.setup-field input{width:100%;padding:10px 14px;background:#f9fafb;border:1.5px solid #e5e7eb;
+  border-radius:7px;color:#1f2937;font-size:13px;font-family:monospace;outline:none;transition:border-color .2s}
+.setup-field input:focus{border-color:#FF7600;box-shadow:0 0 0 3px #FF760015}
+.setup-field input::placeholder{color:#9ca3af}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(135deg,#fff7f0 0%,#f3f4f6 60%,#f5eeff 100%)}
+.login-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;
+  padding:48px 40px;width:380px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.login-card h1{font-size:30px;font-weight:900;letter-spacing:-1px;color:#1f2937;margin-bottom:4px}
+.login-card h2{font-size:12px;font-weight:600;color:#FF7600;text-transform:uppercase;
+  letter-spacing:2px;margin-bottom:20px}
+.login-card p{color:#6b7280;font-size:13px;margin-bottom:28px;line-height:1.7}
+.login-card .hint{color:#9ca3af;font-size:11px;margin-top:14px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;
+  border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;
+  white-space:nowrap;text-decoration:none}
+.btn-primary{background:#FF7600;color:#fff}
+.btn-primary:hover{background:#e06800}
+.btn-primary:disabled{background:#fed7aa;color:#fff;cursor:not-allowed}
+.btn-success{background:#16a34a;color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-outline{background:transparent;color:#FF7600;border:1.5px solid #FF7600}
+.btn-outline:hover{background:#fff7f0}
+.btn-danger{background:#dc2626;color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-ghost{background:none;border:none;color:#9ca3af;cursor:pointer;padding:5px 8px;
+  border-radius:5px;font-size:13px;transition:all .15s}
+.btn-ghost:hover{background:#fee2e2;color:#dc2626}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-ms{width:100%;padding:14px 20px;background:#FF7600;color:#fff;border:none;
+  border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s}
+.btn-ms:hover{background:#e06800}
+
+/* ── LAYOUT ── */
+.layout{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:256px;background:#fff;border-right:1px solid #e5e7eb;
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sb-head{padding:18px 16px 14px;border-bottom:1px solid #f3f4f6}
+.sb-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sb-brand-name{font-size:16px;font-weight:800;color:#1f2937}
+.sb-user{font-size:11px;color:#9ca3af;line-height:1.5}
+.sb-user strong{color:#4b5563;display:block;font-size:12px}
+.sb-section{padding:14px 10px;flex:1}
+.sb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  color:#d1d5db;padding:0 8px;margin-bottom:6px;margin-top:10px}
+.sb-label:first-child{margin-top:0}
+.sb-item{width:100%;text-align:left;padding:9px 10px;background:none;border:none;
+  color:#6b7280;font-size:13px;font-weight:500;cursor:pointer;border-radius:6px;
+  display:flex;align-items:center;gap:8px;transition:all .15s}
+.sb-item:hover{background:#fff7f0;color:#FF7600}
+.sb-item.active{background:#FF760015;color:#FF7600;font-weight:600;border-left:3px solid #FF7600;padding-left:7px}
+.sb-item .badge-cnt{margin-left:auto;font-size:10px;background:#fff3e8;
+  color:#FF7600;padding:2px 7px;border-radius:10px;font-weight:700}
+.sb-filters{padding:12px 10px;border-top:1px solid #f3f4f6}
+.sb-filters input,.sb-filters select{width:100%;padding:8px 10px;background:#f9fafb;
+  border:1px solid #e5e7eb;border-radius:6px;color:#1f2937;font-size:12px;outline:none;
+  margin-bottom:8px;transition:border-color .2s}
+.sb-filters input:focus,.sb-filters select:focus{border-color:#FF7600}
+.sb-filters input::placeholder{color:#9ca3af}
+.sb-filters select option{background:#fff;color:#1f2937}
+.sb-footer{padding:10px;border-top:1px solid #f3f4f6}
+.sb-logout{width:100%;padding:8px 12px;background:none;border:1px solid #e5e7eb;
+  border-radius:6px;color:#6b7280;font-size:12px;cursor:pointer;transition:all .15s}
+.sb-logout:hover{border-color:#FF7600;color:#FF7600;background:#fff7f0}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto;background:#f3f4f6}
+.main-inner{padding:24px;max-width:1120px}
+.page-title{font-size:22px;font-weight:900;color:#1f2937;letter-spacing:-.5px;margin-bottom:4px}
+.page-sub{font-size:13px;color:#9ca3af;margin-bottom:22px}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:18px;
+  box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.card-head{padding:14px 18px;border-bottom:1px solid #f3f4f6;display:flex;
+  justify-content:space-between;align-items:center;background:#f9fafb;
+  border-left:4px solid #FF7600}
+.card-head h3{font-size:13px;font-weight:700;color:#1f2937}
+.card-body{padding:18px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 12px;background:#f9fafb;text-align:left;font-weight:700;color:#9ca3af;
+  font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e5e7eb;
+  white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#f3f4f6}
+td{padding:11px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+
+/* ── WORK ORDER ROWS ── */
+.ml-row{cursor:pointer;transition:background .1s}
+.ml-row:hover td{background:#fff7f0}
+.ml-row.active td{background:#fff3e8;border-bottom-color:#fde0c0}
+.ml-num{font-weight:800;color:#FF7600;font-size:14px}
+.ml-name{font-weight:600;color:#1f2937}
+.ml-meta{color:#9ca3af;font-size:12px}
+.ml-type{font-weight:800;color:#78297d;font-size:14px}
+
+/* ── MUNKALAP HEADER ── */
+.ml-header{background:#fff;border-radius:10px;border:1px solid #e5e7eb;
+  padding:18px 20px;margin-bottom:18px;border-left:4px solid #FF7600;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px 20px}
+.ml-field label{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:#9ca3af;display:block;margin-bottom:3px}
+.ml-field span{font-size:14px;font-weight:600;color:#1f2937}
+.ml-field.hl span{color:#78297d;font-size:20px;font-weight:900}
+.ml-field span.ml-type{color:#78297d;font-size:20px;font-weight:900}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f-group{display:flex;flex-direction:column;gap:5px}
+.f-group.full{grid-column:1/-1}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:#6b7280}
+.f-label .req{color:#dc2626;margin-left:2px}
+.f-ctrl{padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:7px;
+  font-size:14px;color:#1f2937;background:#fff;outline:none;
+  transition:border-color .15s;width:100%;font-family:inherit}
+.f-ctrl:focus{border-color:#FF7600;box-shadow:0 0 0 3px #FF760015}
+.f-ctrl:disabled{background:#f9fafb;color:#9ca3af}
+
+/* ── ALERTS ── */
+.alert{padding:11px 15px;border-radius:7px;font-size:13px;margin-bottom:14px;
+  display:flex;align-items:center;gap:10px}
+.alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.alert-close{margin-left:auto;background:none;border:none;cursor:pointer;
+  color:currentColor;opacity:.6;font-size:16px;line-height:1;padding:0 4px}
+.alert-close:hover{opacity:1}
+
+/* ── SPINNER ── */
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid currentColor;
+  border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;
+  color:#9ca3af;gap:12px;font-size:14px}
+.loading .spin{width:22px;height:22px;border-width:3px}
+.empty{text-align:center;padding:40px;color:#9ca3af}
+.empty svg{margin-bottom:10px}
+
+/* ── BADGES ── */
+.badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-ktv{background:#fff3e8;color:#FF7600}
+.badge-ftth{background:#f0fdf4;color:#16a34a}
+.badge-egyeb{background:#faf5e4;color:#78297d}
+.badge-cnt{background:#fff3e8;color:#FF7600}
+
+/* ── ACTION CELL ── */
+.act-cell{display:flex;gap:4px;align-items:center}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;background:#f3f4f6;padding:3px;border-radius:8px;
+  margin-bottom:18px;width:fit-content}
+.tab{padding:7px 18px;border:none;background:transparent;color:#6b7280;
+  font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .15s}
+.tab.active{background:#fff;color:#FF7600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* ── STAT BOXES ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat-box{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;
+  border-top:3px solid #FF7600}
+.stat-box label{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:#9ca3af;display:block;margin-bottom:4px}
+.stat-box .val{font-size:22px;font-weight:900;color:#1f2937}
+.stat-box .sub{font-size:11px;color:#9ca3af;margin-top:2px}
+
+@media(max-width:900px){
+  .stats{grid-template-columns:1fr 1fr}
+  .ml-header{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .sidebar{width:100%;height:auto;flex-direction:row;flex-wrap:wrap}
+  .main{height:calc(100vh - 120px)}
+  .stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading"><div class="spin"></div> Inicializálás...</div></div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════════
+   CONFIG – Azure App Registration adatai
+══════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  clientId: '9aad78c7-b2c6-4f08-9a77-29872311261f',     // App ID az Azure portálról
+  tenantId: 'e2c00272-db18-4cff-87a2-44d63edfa62b',     // Tenant ID az Azure portálról
+  siteUrl: 'https://vidanetzrt.sharepoint.com/sites/GAI_Muszak',  // SharePoint webhely URL
+  ownerGroupId: '8143cc71-fdbb-402d-9f45-2c83d6961825'  // Tulajdonos csoport ID
+};
+
+const SHAREPOINT = {
+  lists: {
+    munkalapok:       'e4f1e621-ae57-45a4-b366-704e0debf06e',
+    munkaelemekTorzs: 'f507efca-2041-43fe-b372-7ea0acb6d2eb',
+    anyagokTorzs:     'bbce5ceb-4465-4783-ad63-cf1b3effff56',
+    munkalapTetelek:  'e0faec7f-a1e3-45a9-b297-9314e8959464'
+  }
+};
+
+// SharePoint REST API scope – explicit ReadWrite, nem .default
+function getScopes() {
+  try {
+    const origin = new URL(CONFIG.siteUrl).origin;
+    return [
+      `${origin}/Sites.ReadWrite.All`,
+      `${origin}/AllSites.Write`
+    ];
+  } catch {
+    return ['https://sharepoint.com/Sites.ReadWrite.All'];
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+let msalApp = null;
+
+let S = {
+  screen: 'login',
+  account: null,
+  munkalapok: [],
+  munkaelemek: [],
+  anyagok: [],
+  tetelek: [],
+  selectedML: null,
+  view: 'munkalapok',
+  loading: false,
+  saving: false,
+  error: null,
+  success: null,
+  search: '',
+  kivFilter: '',
+  sortBy: 'field_1',
+  sortDir: 'desc',
+  selectedTetelId: null,
+  anyagRows: [{ anyagId: '', mennyiseg: '', megjegyzes: '' }],
+  editId: null
+};
+
+function setState(patch, noRender) {
+  Object.assign(S, patch);
+  if (!noRender) render();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MSAL
+══════════════════════════════════════════════════════════════ */
+function buildMsal() {
+  return new msal.PublicClientApplication({
+    auth: {
+      clientId: CONFIG.clientId,
+      authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+      redirectUri: window.location.href.split('?')[0].split('#')[0]
+    },
+    cache: { cacheLocation: 'sessionStorage' }
+  });
+}
+
+async function getToken() {
+  const accounts = msalApp.getAllAccounts();
+  if (!accounts.length) throw new Error('Nincs bejelentkezett felhasználó');
+  const scopes = getScopes();
+  try {
+    const r = await msalApp.acquireTokenSilent({ scopes, account: accounts[0] });
+    return r.accessToken;
+  } catch {
+    try {
+      const r = await msalApp.acquireTokenPopup({ scopes });
+      return r.accessToken;
+    } catch {
+      await msalApp.acquireTokenRedirect({ scopes });
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SHAREPOINT REST API
+══════════════════════════════════════════════════════════════ */
+function spApi() { return `${CONFIG.siteUrl}/_api/web`; }
+
+function normalizeItem(item) {
+  const id = String(item.Id ?? item.id ?? '');
+  let fields = Object.fromEntries(
+    Object.entries(item).filter(([k]) =>
+      k !== 'Id' && k !== '__metadata' && !k.startsWith('odata.')
+    )
+  );
+  
+  // Felelős mező kezelése - ha StringId vagy Id tartalmaz | karaktert
+  ['Felel_x0151_sId', 'Felel_x0151_sStringId'].forEach(fn => {
+    if (item[fn]) {
+      const val = String(item[fn]);
+      if (val.includes('|')) fields.FelelosEmail = val.split('|').pop().toLowerCase();
+    }
+  });
+  
+  return { id, fields };
+}
+
+async function apiFetch(url, opts={}) {
+  const token = await getToken();
+  const method = (opts.method || 'GET').toUpperCase();
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json;odata=nometadata',
+    ...(opts.headers || {})
+  };
+  if (method !== 'GET' && method !== 'DELETE') {
+    headers['Content-Type'] = 'application/json;odata=nometadata';
+  }
+  const resp = await fetch(url, { ...opts, headers });
+  if (resp.status === 204) return null;
+  const contentType = resp.headers.get('content-type') || '';
+  if (contentType.includes('xml')) {
+    const text = await resp.text();
+    throw new Error(`SharePoint XML választ küldött (HTTP ${resp.status}). Ellenőrizd a jogosultságokat és a webhely URL-t.`);
+  }
+  if (!resp.ok) {
+    try {
+      const data = await resp.json();
+      const msg = data?.error?.message?.value || data?.error?.message || `HTTP ${resp.status}`;
+      throw new Error(msg);
+    } catch(e) {
+      if (e instanceof SyntaxError) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      throw e;
+    }
+  }
+  const text = await resp.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    return null;
+  }
+}
+
+async function getItems(listId, filter='') {
+  let url = `${spApi()}/lists(guid'${listId}')/items?$top=999&$select=*`;
+  if (filter) url += `&$filter=${encodeURIComponent(filter)}`;
+  const all = [];
+  while (url) {
+    const d = await apiFetch(url);
+    const items = d?.value || d?.d?.results || [];
+    all.push(...items.map(normalizeItem));
+    url = d?.['@odata.nextLink'] || d?.d?.__next || null;
+  }
+  return all;
+}
+
+async function getCurrentUserSpId() {
+  const d = await apiFetch(`${spApi()}/currentuser?$select=Id,Email,Title`);
+  const id = d?.Id ?? d?.d?.Id ?? null;
+  const email = (d?.Email ?? d?.d?.Email ?? '').toLowerCase();
+  return { id: id ? String(id) : null, email };
+}
+
+async function createItem(listId, fields) {
+  const resp = await apiFetch(`${spApi()}/lists(guid'${listId}')/items`, {
+    method: 'POST',
+    body: JSON.stringify(fields)
+  });
+  return resp?.d ?? resp;
+}
+
+async function updateItem(listId, itemId, fields) {
+  return apiFetch(`${spApi()}/lists(guid'${listId}')/items(${itemId})`, {
+    method: 'PATCH',
+    headers: { 'If-Match': '*' },
+    body: JSON.stringify(fields)
+  });
+}
+
+async function deleteItem(listId, itemId) {
+  return apiFetch(`${spApi()}/lists(guid'${listId}')/items(${itemId})`, {
+    method: 'DELETE',
+    headers: { 'If-Match': '*' }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DATA LOADING
+══════════════════════════════════════════════════════════════ */
+async function loadAll() {
+  setState({ loading:true, error:null });
+  try {
+    // 1. Bejelentkezett user adatainak lekérése
+    const cu = await getCurrentUserSpId();
+    if (!cu.id) {
+      throw new Error('Nincs bejelentkezett felhasználó');
+    }
+    console.log('User SP ID:', cu.id, 'Email:', cu.email);
+
+    // 2. Csoportok lekérdezése a felhasználóhoz
+    const isOwner = await checkUserIsOwner(cu.email);
+    console.log('User is owner:', isOwner);
+
+    // 3. Munkalapok lekérése
+    let spFilter = '';
+    if (!isOwner) {
+      // Vendég: csak a saját munkalapok
+      spFilter = `Felel_x0151_sId eq ${cu.id}`;
+    }
+
+    const [munkalapok, munkaelemek, anyagok] = await Promise.all([
+      getItems(SHAREPOINT.lists.munkalapok, spFilter),
+      getItems(SHAREPOINT.lists.munkaelemekTorzs),
+      getItems(SHAREPOINT.lists.anyagokTorzs)
+    ]);
+
+    console.log(`Munkalapok betöltve: ${munkalapok.length} db (owner: ${isOwner})`);
+
+    munkalapok.sort((a,b) => (b.fields.field_1||0)-(a.fields.field_1||0));
+    setState({ munkalapok, munkaelemek, anyagok });
+  } catch(e) {
+    setState({ error:`Adatok betöltési hiba: ${e.message}` });
+  } finally {
+    setState({ loading:false });
+  }
+}
+
+async function checkUserIsOwner(userEmail) {
+  try {
+    const token = await getToken();
+    const url = `https://graph.microsoft.com/v1.0/groups/${CONFIG.ownerGroupId}/owners`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json();
+    const owners = data.value || [];
+
+    console.log('Owners:', owners.map(o => o.mail));
+    const isOwner = owners.some(o => o.mail?.toLowerCase() === userEmail.toLowerCase());
+    console.log('Is owner:', isOwner);
+
+    return isOwner;
+  } catch(e) {
+    console.warn('Owner check failed:', e.message);
+    return false;
+  }
+}
+
+async function loadTetelek(mlItemId) {
+  try {
+    const tetelek = await getItems(
+      SHAREPOINT.lists.munkalapTetelek,
+      `MunkalapId eq ${mlItemId}`
+    );
+
+    // Ha van már tétel, automatikusan állítsd be a munkatételt
+    if (tetelek.length > 0 && !S.selectedTetelId) {
+      const firstTetelId = tetelek[0].fields.T_x00e9_telk_x00f3_dId;
+      if (firstTetelId) {
+        setState({ tetelek, selectedTetelId: String(firstTetelId) });
+        return;
+      }
+    }
+
+    setState({ tetelek });
+  } catch(e) {
+    console.warn('Tételek hiba:', e.message);
+    setState({ tetelek:[] });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ACTIONS
+══════════════════════════════════════════════════════════════ */
+async function doLogin() {
+  Object.keys(sessionStorage)
+    .filter(k => k.includes('interaction'))
+    .forEach(k => sessionStorage.removeItem(k));
+
+  try {
+    const r = await msalApp.loginRedirect({ scopes: getScopes() });
+    setState({ account:r?.account, screen:'app', error:null });
+    await loadAll();
+  } catch(e) {
+    if (e.errorCode === 'interaction_in_progress') {
+      Object.keys(sessionStorage)
+        .filter(k => k.startsWith('msal'))
+        .forEach(k => sessionStorage.removeItem(k));
+      setState({ error:'Kérjük, kattints újra a bejelentkezés gombra.' });
+    } else {
+      setState({ error:`Bejelentkezési hiba: ${e.message}` });
+    }
+  }
+}
+
+function doLogout() {
+  msalApp.logout();
+  setState({ account:null, screen:'login', munkalapok:[], munkaelemek:[], anyagok:[], tetelek:[], selectedML:null });
+}
+
+async function selectML(item) {
+  setState({ selectedML:item, view:'rogzites', tetelek:[], selectedTetelId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }], editId:null, error:null, success:null });
+  await loadTetelek(item.id);
+}
+
+async function doSave() {
+  syncForm();
+  const { selectedML, anyagRows, selectedTetelId } = S;
+  if (!selectedML) return;
+  if (!selectedTetelId) {
+    setState({ error:'Munkatételt kötelezően ki kell választani!' }); return;
+  }
+
+  // Validáció: legalább egy kitöltött sor kell
+  const validRows = anyagRows.filter(row => row.anyagId && row.mennyiseg && parseFloat(row.mennyiseg) > 0);
+  if (validRows.length === 0) {
+    setState({ error:'Legalább egy anyagtételt meg kell adni mennyiséggel!' }); return;
+  }
+
+  setState({ saving:true, error:null });
+  try {
+    // Minden érvényes sort mentünk
+    for (const row of validRows) {
+      const fields = {
+        MunkalapId:        parseInt(selectedML.id),
+        T_x00e9_telk_x00f3_dId: parseInt(selectedTetelId),
+        Anyagk_x00f3_dId:  parseInt(row.anyagId),
+        Mennyis_x00e9_g:   parseFloat(row.mennyiseg),
+        Megjegyz_x00e9_s:  row.megjegyzes || ''
+      };
+      await createItem(SHAREPOINT.lists.munkalapTetelek, fields);
+    }
+
+    await loadTetelek(selectedML.id);
+    setState({ success: `${validRows.length} tétel sikeresen rögzítve ✓`,
+               anyagRows: [{ anyagId:'', mennyiseg:'', megjegyzes:'' }] });
+    setTimeout(() => setState({ success:null }), 4000);
+  } catch(e) {
+    setState({ error:`Mentési hiba: ${e.message}` });
+  } finally {
+    setState({ saving:false });
+  }
+}
+
+async function doDelete(itemId) {
+  if (!confirm('Biztosan törlöd ezt a tételt?')) return;
+  try {
+    await deleteItem(SHAREPOINT.lists.munkalapTetelek, itemId);
+    await loadTetelek(S.selectedML.id);
+    setState({ success:'Tétel törölve.' });
+    setTimeout(() => setState({ success:null }), 3000);
+  } catch(e) {
+    setState({ error:`Törlési hiba: ${e.message}` });
+  }
+}
+
+function addAnyagRow() {
+  S.anyagRows.push({ anyagId: '', mennyiseg: '', megjegyzes: '' });
+  render();
+  const newIndex = S.anyagRows.length - 1;
+  setTimeout(() => {
+    document.getElementById(`f-anyag-${newIndex}`)?.focus();
+  }, 0);
+}
+
+function removeAnyagRow(index) {
+  if (S.anyagRows.length > 1) {
+    S.anyagRows.splice(index, 1);
+    render();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════════ */
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate = d => d ? new Date(d).toLocaleDateString('hu-HU') : '–';
+const fmtNum = n => n != null ? Number(n).toLocaleString('hu-HU') : '–';
+
+function getSortIcon(col) {
+  if (S.sortBy !== col) return '';
+  return S.sortDir === 'asc' ? ' ↑' : ' ↓';
+}
+
+function sortMunkalapok(items) {
+  if (!S.sortBy) return items;
+  return [...items].sort((a, b) => {
+    const getVal = (item) => {
+      if (S.sortBy === 'cim') {
+        const cimA = [item.fields.field_4,item.fields.field_5,item.fields.field_6,item.fields.field_7].filter(Boolean).join(' ');
+        const cimB = [b.fields.field_4,b.fields.field_5,b.fields.field_6,b.fields.field_7].filter(Boolean).join(' ');
+        return cimA.toLowerCase();
+      }
+      if (S.sortBy === 'Munkalap') return String(item.fields.Munkalap||'').toLowerCase();
+      const val = item.fields[S.sortBy];
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') return val.toLowerCase();
+      if (val instanceof Date) return val.getTime();
+      return String(val||'').toLowerCase();
+    };
+    const aVal = getVal(a);
+    const bVal = getVal(b);
+    if (aVal < bVal) return S.sortDir === 'asc' ? -1 : 1;
+    if (aVal > bVal) return S.sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+function syncForm() {
+  S.anyagRows.forEach((row, index) => {
+    row.anyagId = document.getElementById(`f-anyag-${index}`)?.value || '';
+    row.mennyiseg = document.getElementById(`f-menny-${index}`)?.value || '';
+    row.megjegyzes = document.getElementById(`f-megj-${index}`)?.value || '';
+  });
+  S.selectedTetelId = document.getElementById('f-tetel')?.value || '';
+}
+
+function getAnyagLabel(id) {
+  if (!id) return '–';
+  const a = S.anyagok.find(x => String(x.id)===String(id));
+  if (!a) return `(ID:${id})`;
+  const f = a.fields;
+  const name = f.field_1 || f.Megnevezes || f.Anyag_neve || f.Nev || f.Leiras || '';
+  return name ? esc(name) : esc(f.Title||id);
+}
+
+function getTetelLabel(id) {
+  if (!id) return '–';
+  const t = S.munkaelemek.find(x => String(x.id)===String(id));
+  if (!t) return `(ID:${id})`;
+  const f = t.fields;
+  const name = f.Tetel_neve || f.Title || '';
+  return name ? esc(name) : esc(f.Tekod || id);
+}
+
+function getSelectedTetel() {
+  if (!S.selectedTetelId) return null;
+  return S.munkaelemek.find(m => String(m.id) === S.selectedTetelId);
+}
+
+function getSelectedAnyag() {
+  if (!S.form.anyagId) return null;
+  return S.anyagok.find(a => String(a.id) === S.form.anyagId);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════════════ */
+function render() {
+  const root = document.getElementById('app');
+  if      (S.screen==='login')  root.innerHTML = renderLogin();
+  else                          root.innerHTML = renderApp();
+  bind();
+}
+
+function renderLogin() {
+  return `
+  <div class="login-wrap">
+    <div class="login-card">
+      ${logo(56)}
+      <h1 style="margin-top:16px">Vidanet</h1>
+      <h2>Anyagrögzítő rendszer</h2>
+      <p>Kivitelezői anyagfelhasználás rögzítése<br>munkalapok alapján</p>
+      ${S.error ? `<div class="alert alert-err" style="text-align:left">${esc(S.error)}</div>` : ''}
+      <button class="btn-ms" id="btn-login">
+        <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
+          <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+          <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+          <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+          <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+        </svg>
+        Bejelentkezés Microsoft-fiókkal
+      </button>
+      <p class="hint">Vidanet Microsoft 365 fiók szükséges</p>
+    </div>
+  </div>`;
+}
+
+function renderApp() {
+  const { view, munkalapok, loading, search, kivFilter, selectedML, tetelek, account } = S;
+
+  const kivs = [...new Set(munkalapok.map(m=>m.fields.field_8).filter(Boolean))].sort();
+
+  // Szerver oldali szűrés után csak szöveg és kivitelező szűrés marad
+  const filtered = munkalapok.filter(m => {
+    const f = m.fields;
+    const q = search.toLowerCase();
+    if (q && ![f.field_1,f.field_2,f.field_3,f.field_5,f.field_8,f.Munkalap].some(v =>
+      String(v||'').toLowerCase().includes(q))) return false;
+    if (kivFilter && f.field_8 !== kivFilter) return false;
+    return true;
+  });
+
+  console.log('Megjelenített munkalapok:', filtered.length, '/', munkalapok.length);
+
+    return `
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="sb-head">
+        <div class="sb-brand">${logo(30)} <span class="sb-brand-name">Anyagrögzítő</span></div>
+        <div class="sb-user">Bejelentkezve:<strong>${esc(S.account?.name||S.account?.username||'')}</strong></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Nézetek</div>
+        <button class="sb-item${view==='munkalapok'?' active':''}" data-nav="munkalapok">
+          ${ico('list')} Munkalapok
+          <span class="badge-cnt" style="margin-left:auto">${filtered.length}</span>
+        </button>
+        ${selectedML ? `
+        <button class="sb-item${view==='rogzites'?' active':''}" data-nav="rogzites">
+          ${ico('pencil')} Anyagfelvitel
+          <span class="badge-cnt" style="margin-left:auto">${tetelek.length}</span>
+        </button>` : ''}
+
+        <div class="sb-label" style="margin-top:16px">Összesítők</div>
+        <div style="padding:8px 10px;font-size:12px;color:#6b7280;line-height:2">
+          📋 ${munkalapok.length} munkalap betöltve<br>
+          🔧 ${S.munkaelemek.length} munkatétel típus<br>
+          📦 ${S.anyagok.length} anyag törzs
+        </div>
+      </div>
+      <div class="sb-filters">
+        <input type="text" id="inp-search" placeholder="🔍 Keresés..." value="${esc(search)}">
+        <select id="sel-kiv">
+          <option value="">Minden kivitelező</option>
+          ${kivs.map(k=>`<option value="${esc(k)}"${k===kivFilter?' selected':''}>${esc(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="sb-footer">
+        <button class="sb-logout" id="btn-logout">⏻  Kijelentkezés</button>
+      </div>
+    </nav>
+
+    <main class="main">
+      <div class="main-inner">
+        ${view==='munkalapok' ? renderMLList(filtered, loading) : renderRogzites()}
+      </div>
+    </main>
+  </div>`;
+}
+
+function renderMLList(items, loading) {
+  const sorted = sortMunkalapok(items);
+  return `
+  <div class="page-title">Munkalapok</div>
+  <p class="page-sub">${sorted.length} munkalap • kattints a megnyitáshoz</p>
+  ${renderAlerts()}
+  <div class="card">
+    ${loading ? `<div class="loading"><div class="spin"></div> Betöltés...</div>` : ''}
+    ${!loading && sorted.length===0 ? `<div class="empty">${ico('empty')}<p>Nincs találat a szűrőkre</p></div>` : ''}
+    ${!loading && sorted.length>0 ? `
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th data-sort="Munkalap" style="color:#9ca3af">Munkalap típus${getSortIcon('Munkalap')}</th>
+          <th data-sort="field_1">Munkalapszám${getSortIcon('field_1')}</th>
+          <th data-sort="field_2">Előf. azon.${getSortIcon('field_2')}</th>
+          <th data-sort="field_3">Ügyfél neve${getSortIcon('field_3')}</th>
+          <th data-sort="cim">Cím${getSortIcon('cim')}</th>
+          <th data-sort="field_8">Kivitelező${getSortIcon('field_8')}</th>
+          <th data-sort="field_9">Kiadás${getSortIcon('field_9')}</th>
+          <th data-sort="field_10">Munkavégzés${getSortIcon('field_10')}</th>
+        </tr></thead>
+        <tbody>
+          ${sorted.map(m => {
+            const f = m.fields;
+            const sel = S.selectedML?.id===m.id;
+            const cim = [f.field_4,f.field_5,f.field_6,f.field_7].filter(Boolean).join(' ');
+            return `
+            <tr class="ml-row${sel?' active':''}" data-ml-id="${esc(m.id)}">
+              <td><span class="ml-type">${esc(f.Munkalap||'–')}</span></td>
+              <td><span class="ml-num">${f.field_1||'–'}</span></td>
+              <td class="ml-meta">${f.field_2||'–'}</td>
+              <td><span class="ml-name">${esc(f.field_3||'–')}</span></td>
+              <td class="ml-meta">${esc(cim||'–')}</td>
+              <td class="ml-meta">${esc(f.field_8||'–')}</td>
+              <td class="ml-meta">${fmtDate(f.field_9)}</td>
+              <td class="ml-meta">${fmtDate(f.field_10)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  </div>`;
+}
+
+function renderRogzites() {
+  const ml = S.selectedML;
+  if (!ml) return `<div class="empty"><p>Nincs kiválasztott munkalap</p></div>`;
+  const f = ml.fields;
+  const cim = [f.field_4,f.field_5,f.field_6,f.field_7].filter(Boolean).join(' ');
+
+  const tetelCount = S.tetelek.length;
+  const anyagFajtak = new Set(S.tetelek.map(t=>t.fields.Anyagk_x00f3_dId).filter(Boolean)).size;
+  const osszmenny   = S.tetelek.reduce((s,t)=>s+(t.fields.Mennyis_x00e9_g||0),0);
+
+  const selectedTetel = getSelectedTetel();
+  const selectedTetelName = selectedTetel?.fields?.Tetel_neve || selectedTetel?.fields?.Title || '–';
+  const selectedTetelEgyseg = selectedTetel?.fields?.Egyseg || '–';
+
+  const meOpts = S.munkaelemek.map(m => {
+    const mf = m.fields;
+    const kod = mf.Tekod || '';
+    const name = mf.Tetel_neve || mf.Title || '';
+    const label = kod && name ? `${kod} – ${name}` : (kod || name || '');
+    return `<option value="${esc(m.id)}"${String(m.id)===S.selectedTetelId?' selected':''}>${esc(label)}</option>`;
+  }).join('');
+
+  return `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+    <button class="btn btn-outline btn-sm" data-nav="munkalapok">← Vissza</button>
+    <div>
+      <div class="page-title">Anyagfelvitel</div>
+      <p class="page-sub">Munkalap #${fmtNum(f.field_1)} · ${esc(f.field_3||'')} · ${esc(f.field_8||'')}</p>
+    </div>
+    <button class="btn btn-outline btn-sm" id="btn-refresh" style="margin-left:auto">⟳ Frissítés</button>
+  </div>
+
+  <div class="ml-header">
+    <div class="ml-field hl"><label>Munkalapszám</label><span class="ml-type">${f.field_1||'–'}</span></div>
+    <div class="ml-field"><label>Munkalap típusa</label><span class="ml-type">${esc(f.Munkalap||'–')}</span></div>
+    <div class="ml-field"><label>Kivitelező</label><span>${esc(f.field_8||'–')}</span></div>
+    <div class="ml-field"><label>Ügyfél neve</label><span>${esc(f.field_3||'–')}</span></div>
+    <div class="ml-field"><label>Cím</label><span>${esc(cim||'–')}</span></div>
+    <div class="ml-field"><label>Munkavégzés dátuma</label><span>${fmtDate(f.field_10)}</span></div>
+  </div>
+
+  <div style="margin-top:12px;padding:12px;background:#f5eeff;border-radius:7px;border-left:3px solid #78297d;margin-bottom:18px">
+    <a href="https://secure.vidanet.hu/ecoweb/secure/mlap/admin.aspx?ID=${f.field_1}" target="_blank" rel="noopener noreferrer" style="color:#78297d;text-decoration:none;font-weight:500">
+      🔗 Ecoweb megnyitása (munkalap: ${f.field_1 || '–'})
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>📋 Munkatétel kiválasztása</h3>
+      ${S.selectedTetelId ? `<button class="btn btn-outline btn-sm" id="btn-reset-tetel">↻ Alaphelyzetbe</button>` : ''}
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="f-group full">
+          <label class="f-label">Munkatétel</label>
+          <select class="f-ctrl" id="f-tetel" ${S.selectedTetelId ? 'disabled' : ''}>
+            <option value="">– Válassz munkatételt –</option>
+            ${meOpts}
+          </select>
+        </div>
+      </div>
+      ${S.selectedTetelId ? `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:7px;border-left:3px solid #16a34a">
+        <strong style="color:#15803d">✓ Kiválasztott munkatétel:</strong> ${esc(selectedTetelName)}
+      </div>` : ''}
+    </div>
+  </div>
+
+  ${renderAlerts()}
+
+  <div class="card">
+    <div class="card-head">
+      <h3>${S.editId ? '✏️ Anyagtétel szerkesztése' : '➕ Anyagtételek rögzítése'}</h3>
+      ${S.editId ? `<button class="btn btn-outline btn-sm" id="btn-cancel">Mégsem</button>` : ''}
+    </div>
+    <div class="card-body">
+      ${!S.selectedTetelId ? `<div class="alert alert-err">⚠️ Előbb válassz munkatételt a fenti szekcióban!</div>` : ''}
+
+      ${S.anyagRows.map((row, index) => `
+        <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;background:#fafafa">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <strong style="color:#1f2937">Anyagtétel #${index + 1}</strong>
+            ${S.anyagRows.length > 1 ? `<button class="btn-ghost" data-remove-row="${index}" title="Sor törlése">🗑</button>` : ''}
+          </div>
+          <div class="form-grid">
+            <div class="f-group">
+              <label class="f-label">Anyagkód <span class="req">*</span></label>
+              <select class="f-ctrl" id="f-anyag-${index}" ${!S.selectedTetelId ? 'disabled' : ''}>
+                <option value="">– Válassz anyagot –</option>
+                ${S.anyagok.map(a => {
+                  const af = a.fields;
+                  const kod = af.Title || '';
+                  const name = af.field_1 || '';
+                  const label = kod && name ? `${kod} – ${name}` : (kod || name || '');
+                  return `<option value="${esc(a.id)}"${String(a.id)===row.anyagId?' selected':''}>${esc(label)}</option>`;
+                }).join('')}
+              </select>
+            </div>
+            <div class="f-group">
+              <label class="f-label">Mennyiség <span class="req">*</span></label>
+              <div style="display:flex;gap:8px">
+                <input type="number" class="f-ctrl" id="f-menny-${index}" style="flex:1"
+                  value="${esc(row.mennyiseg)}" min="0.01" step="0.01" placeholder="pl. 10" ${!S.selectedTetelId ? 'disabled' : ''}>
+                <div style="display:flex;align-items:center;padding:9px 12px;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:7px;white-space:nowrap;font-weight:500;color:#1f2937;min-width:80px;justify-content:center">
+                  ${row.anyagId ? esc(S.anyagok.find(a => String(a.id) === row.anyagId)?.fields?.Egys_x00e9_g || '–') : '–'}
+                </div>
+              </div>
+            </div>
+            <div class="f-group full">
+              <label class="f-label">Megjegyzés</label>
+              <input type="text" class="f-ctrl" id="f-megj-${index}"
+                value="${esc(row.megjegyzes)}" placeholder="Opcionális megjegyzés" maxlength="255" ${!S.selectedTetelId ? 'disabled' : ''}>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" id="btn-add-row" ${!S.selectedTetelId ? 'disabled' : ''}>
+          ➕ Új anyagtétel sor
+        </button>
+        <button class="btn btn-primary" id="btn-save" ${S.saving || !S.selectedTetelId ? 'disabled' : ''}>
+          ${S.saving ? `<span class="spin"></span>` : ''}
+          Összes tétel mentése
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" style="border-left-color:#78297d">
+      <h3>Rögzített tételek</h3>
+      <span class="badge badge-cnt">${S.tetelek.length} db</span>
+    </div>
+    ${S.tetelek.length===0
+      ? `<div class="empty">${ico('empty')}<p>Még nincsenek rögzített anyagtételek ehhez a munkalaphoz</p></div>`
+      : `<div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Munkatétel</th><th>Anyagkód</th>
+            <th>Mennyiség</th><th>Egység</th><th>Megjegyzés</th><th>Műveletek</th>
+          </tr></thead>
+          <tbody>
+            ${S.tetelek.map((t,i) => {
+              const tf = t.fields;
+              const tetelDisp = tf['T_x00e9_telk_x00f3_d'] || getTetelLabel(tf.T_x00e9_telk_x00f3_dId);
+              const anyagDisp = tf['Anyagk_x00f3_d']       || getAnyagLabel(tf.Anyagk_x00f3_dId);
+              // Anyag egység a lookupból vagy az anyagok listából
+              const anyagId = tf.Anyagk_x00f3_dId || tf['Anyagk_x00f3_d']?.Id;
+              let egyseg = tf['Anyagk_x00f3_d_Egys_x00e9_g'] || tf.Egys_x00e9_g;
+              if (!egyseg && anyagId) {
+                const anyag = S.anyagok.find(a => String(a.id) === String(anyagId));
+                egyseg = anyag?.fields?.Egys_x00e9_g || anyag?.fields?.Egység || anyag?.fields?.Egyseg || '–';
+              }
+              return `
+              <tr>
+                <td class="ml-meta">${i+1}</td>
+                <td>${tetelDisp}</td>
+                <td>${anyagDisp}</td>
+                <td><strong>${fmtNum(tf.Mennyis_x00e9_g)}</strong></td>
+                <td class="ml-meta">${esc(egyseg)}</td>
+                <td class="ml-meta">${esc(tf.Megjegyz_x00e9_s||'–')}</td>
+                <td>
+                  <div class="act-cell">
+                    <button class="btn-ghost" data-del="${esc(t.id)}" title="Törlés">🗑</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`
+    }
+  </div>`;
+}
+
+function renderAlerts() {
+  return `
+    ${S.error   ? `<div class="alert alert-err">${ico('warn')} ${esc(S.error)}<button class="alert-close" id="cl-err">✕</button></div>` : ''}
+    ${S.success ? `<div class="alert alert-ok">${ico('check')} ${esc(S.success)}</div>` : ''}`;
+}
+
+function logo(size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#FF7600"/>
+    <text x="24" y="34" text-anchor="middle" font-family="Segoe UI,sans-serif"
+      font-weight="900" font-size="19" fill="white">VDN</text>
+  </svg>`;
+}
+
+function ico(name) {
+  const icons = {
+    list:  `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v2H3V4zm0 5h14v2H3V9zm0 5h10v2H3v-2z"/></svg>`,
+    pencil:`<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.6 2.4a2 2 0 012.8 2.8L5.8 15.8l-3.6.8.8-3.6L13.6 2.4z"/></svg>`,
+    empty: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`,
+    warn:  `⚠️`,
+    check: `✓`
+  };
+  return icons[name]||'';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVENT BINDING
+══════════════════════════════════════════════════════════════ */
+function bind() {
+  const on = (id, ev, fn) => document.getElementById(id)?.addEventListener(ev, fn);
+  const all = (sel, fn) => document.querySelectorAll(sel).forEach(fn);
+
+  on('btn-login',       'click', doLogin);
+
+  on('btn-logout',   'click',  doLogout);
+  on('btn-refresh',  'click',  async () => { await loadAll(); if (S.selectedML) await loadTetelek(S.selectedML.id); });
+  on('btn-save',     'click',  doSave);
+  on('btn-add-row',  'click',  addAnyagRow);
+  on('btn-reset-tetel', 'click', () => setState({selectedTetelId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }]}));
+  on('btn-cancel',   'click',  () => setState({editId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }]}));
+  on('cl-err',       'click',  () => setState({error:null}));
+
+  all('[data-nav]',     el => el.addEventListener('click', () => setState({view:el.dataset.nav, error:null})));
+  all('th[data-sort]',   el => el.addEventListener('click', () => {
+    const col = el.dataset.sort;
+    let newDir = 'asc';
+    if (S.sortBy === col) {
+      newDir = S.sortDir === 'asc' ? 'desc' : 'asc';
+    }
+    setState({ sortBy: col, sortDir: newDir });
+  }));
+  all('.ml-row',        el => el.addEventListener('click', () => {
+    const item = S.munkalapok.find(m=>m.id===el.dataset.mlId);
+    if (item) selectML(item);
+  }));
+  all('[data-del]',     el => el.addEventListener('click', () => doDelete(el.dataset.del)));
+  all('[data-remove-row]', el => el.addEventListener('click', () => removeAnyagRow(parseInt(el.dataset.removeRow))));
+
+  on('inp-search', 'input', e => {
+    setState({search: e.target.value}, true);
+    const el = document.getElementById('inp-search');
+    el.value = e.target.value;
+    render();
+    const reFocused = document.getElementById('inp-search');
+    if (reFocused) {
+        reFocused.focus();
+        reFocused.selectionStart = reFocused.selectionEnd = reFocused.value.length;
+    }
+  });
+  on('sel-kiv',    'change', e => setState({kivFilter:e.target.value}));
+
+  // Dinamikus input mezők kezelése
+  S.anyagRows.forEach((row, index) => {
+    ['f-anyag','f-menny','f-megj'].forEach(prefix => {
+      const id = `${prefix}-${index}`;
+      document.getElementById(id)?.addEventListener('input', syncForm);
+    });
+
+    // Anyag selectnél change event a render-hez
+    document.getElementById(`f-anyag-${index}`)?.addEventListener('change', () => {
+      syncForm();
+      render();
+    });
+  });
+
+  document.getElementById('f-tetel')?.addEventListener('change', e => {
+    setState({selectedTetelId: e.target.value});
+  });
+
+  document.getElementById('f-menny-0')?.addEventListener('keydown', e => {
+    if (e.key==='Enter') doSave();
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+async function init() {
+  msalApp = buildMsal();
+  await msalApp.initialize();
+
+  try {
+    const resp = await msalApp.handleRedirectPromise();
+    if (resp?.account) {
+      setState({ account:resp.account, screen:'app' });
+      await loadAll();
+      return;
+    }
+  } catch(e) {
+    console.warn('Redirect:', e);
+  }
+
+  const accounts = msalApp.getAllAccounts();
+  if (accounts.length) {
+    setState({ account:accounts[0], screen:'app' });
+    await loadAll();
+  } else {
+    setState({ screen:'login' });
+  }
+}
+
+init();
+</script>
+</body>
+</html>
