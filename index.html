@@ -223,21 +223,25 @@ tr:last-child td{border-bottom:none}
 'use strict';
 
 /* ══════════════════════════════════════════════════════════════
-   CONFIG – Azure App Registration adatai
+   CONFIG – Azure App Registration (obfuscated)
+   A sima szemmel olvashatatlan, de futásidőben dekódolódik
 ══════════════════════════════════════════════════════════════ */
+const _XKEY = 'V1d4n3t!2024';
+function _x(s){const k=_XKEY;let r='',b=atob(s);for(let i=0;i<b.length;i++)r+=String.fromCharCode(b.charCodeAt(i)^k.charCodeAt(i%k.length));return r}
+
 const CONFIG = {
-  clientId: '9aad78c7-b2c6-4f08-9a77-29872311261f',     // App ID az Azure portálról
-  tenantId: 'e2c00272-db18-4cff-87a2-44d63edfa62b',     // Tenant ID az Azure portálról
-  siteUrl: 'https://vidanetzrt.sharepoint.com/sites/GAI_Muszak',  // SharePoint webhely URL
-  ownerGroupId: '8143cc71-fdbb-402d-9f45-2c83d6961825'  // Tulajdonos csoport ID
+  clientId:     _x('b1AFUFkLFxYfUgBXYBxQUl4LWRhTBwUZZAhcA1wARRAABgNS'),
+  tenantId:     _x('MwMHBF4BQxMfVFAFbhxQVwhVWRkFUQAZYgUAAl1WEEdTBgBW'),
+  siteUrl:      _x('PkUQRB0JWw5EWVZVOFQQThxHWlJaUUBRJl4NWhodF05fH0FdIlQXGylyPX5/RUFON1o='),
+  ownerGroupId: _x('bgBQBw1QQxAfVlZWNBxQBFxXWRhUBAcZZFJcBwoFTRcDCAAB')
 };
 
 const SHAREPOINT = {
   lists: {
-    munkalapok:       'e4f1e621-ae57-45a4-b366-704e0debf06e',
-    munkaelemekTorzs: 'f507efca-2041-43fe-b372-7ea0acb6d2eb',
-    anyagokTorzs:     'bbce5ceb-4465-4783-ad63-cf1b3effff56',
-    munkalapTetelek:  'e0faec7f-a1e3-45a9-b297-9314e8959464'
+    munkalapok:       _x('MwUCBQsFRhAfUVcBYRxQAQ8HWUMBBgQZYQFQUV5XEUNUAARR'),
+    munkaelemekTorzs: _x('MARUAwtVF0AfAgIAZxxQBwhWWUMBBwAZYVQFBA9QFhdWAldW'),
+    anyagokTorzs:     _x('NFMHUVtQEUMfBAYCYxxQA1YAWUBWBgEZNVdVVl1WEkdUVgcC'),
+    munkalapTetelek:  _x('MwECVQtQQ0cfUQNRZRxQAQ8KWUMACQUZbwJVAAsLTRQLBAQA')
   }
 };
 
