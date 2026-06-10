@@ -223,25 +223,21 @@ tr:last-child td{border-bottom:none}
 'use strict';
 
 /* ══════════════════════════════════════════════════════════════
-   CONFIG – Azure App Registration (obfuscated)
-   A sima szemmel olvashatatlan, de futásidőben dekódolódik
+   CONFIG – Azure App Registration adatai
 ══════════════════════════════════════════════════════════════ */
-const _XKEY = 'V1d4n3t!2024';
-function _x(s){const k=_XKEY;let r='',b=atob(s);for(let i=0;i<b.length;i++)r+=String.fromCharCode(b.charCodeAt(i)^k.charCodeAt(i%k.length));return r}
-
 const CONFIG = {
-  clientId:     _x('b1AFUFkLFxYfUgBXYBxQUl4LWRhTBwUZZAhcA1wARRAABgNS'),
-  tenantId:     _x('MwMHBF4BQxMfVFAFbhxQVwhVWRkFUQAZYgUAAl1WEEdTBgBW'),
-  siteUrl:      _x('PkUQRB0JWw5EWVZVOFQQThxHWlJaUUBRJl4NWhodF05fH0FdIlQXGylyPX5/RUFON1o='),
-  ownerGroupId: _x('bgBQBw1QQxAfVlZWNBxQBFxXWRhUBAcZZFJcBwoFTRcDCAAB')
+  clientId: '9aad78c7-b2c6-4f08-9a77-29872311261f',     // App ID az Azure portálról
+  tenantId: 'e2c00272-db18-4cff-87a2-44d63edfa62b',     // Tenant ID az Azure portálról
+  siteUrl: 'https://vidanetzrt.sharepoint.com/sites/GAI_Muszak',  // SharePoint webhely URL
+  ownerGroupId: '8143cc71-fdbb-402d-9f45-2c83d6961825'  // Tulajdonos csoport ID
 };
 
 const SHAREPOINT = {
   lists: {
-    munkalapok:       _x('MwUCBQsFRhAfUVcBYRxQAQ8HWUMBBgQZYQFQUV5XEUNUAARR'),
-    munkaelemekTorzs: _x('MARUAwtVF0AfAgIAZxxQBwhWWUMBBwAZYVQFBA9QFhdWAldW'),
-    anyagokTorzs:     _x('NFMHUVtQEUMfBAYCYxxQA1YAWUBWBgEZNVdVVl1WEkdUVgcC'),
-    munkalapTetelek:  _x('MwECVQtQQ0cfUQNRZRxQAQ8KWUMACQUZbwJVAAsLTRQLBAQA')
+    munkalapok:       'e4f1e621-ae57-45a4-b366-704e0debf06e',
+    munkaelemekTorzs: 'f507efca-2041-43fe-b372-7ea0acb6d2eb',
+    anyagokTorzs:     'bbce5ceb-4465-4783-ad63-cf1b3effff56',
+    munkalapTetelek:  'e0faec7f-a1e3-45a9-b297-9314e8959464'
   }
 };
 
@@ -544,6 +540,7 @@ function doLogout() {
 async function selectML(item) {
   setState({ selectedML:item, view:'rogzites', tetelek:[], selectedTetelId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }], editId:null, error:null, success:null });
   await loadTetelek(item.id);
+  setTimeout(() => document.getElementById('f-tetel')?.focus(), 0);
 }
 
 async function doSave() {
@@ -857,6 +854,7 @@ function renderRogzites() {
       <p class="page-sub">Munkalap #${fmtNum(f.field_1)} · ${esc(f.field_3||'')} · ${esc(f.field_8||'')}</p>
     </div>
     <button class="btn btn-outline btn-sm" id="btn-refresh" style="margin-left:auto">⟳ Frissítés</button>
+    <button class="btn btn-outline btn-sm" onclick="window.open('https://secure.vidanet.hu/ecoweb/secure/mlap/admin.aspx?ID=${f.field_1}','_blank')">🔗 EcoWeb</button>
   </div>
 
   <div class="ml-header">
@@ -868,11 +866,6 @@ function renderRogzites() {
     <div class="ml-field"><label>Munkavégzés dátuma</label><span>${fmtDate(f.field_10)}</span></div>
   </div>
 
-  <div style="margin-top:12px;padding:12px;background:#f5eeff;border-radius:7px;border-left:3px solid #78297d;margin-bottom:18px">
-    <a href="https://secure.vidanet.hu/ecoweb/secure/mlap/admin.aspx?ID=${f.field_1}" target="_blank" rel="noopener noreferrer" style="color:#78297d;text-decoration:none;font-weight:500">
-      🔗 Ecoweb megnyitása (munkalap: ${f.field_1 || '–'})
-    </a>
-  </div>
 
   <div class="card">
     <div class="card-head">
@@ -956,6 +949,19 @@ function renderRogzites() {
     </div>
   </div>
 
+  ${S.tetelek.length > 0 && S.selectedTetelId ? (() => {
+    const tf0 = S.tetelek[0].fields;
+    const tetelDisp = tf0['T_x00e9_telk_x00f3_d'] || getTetelLabel(tf0.T_x00e9_telk_x00f3_dId);
+    return `<div class="card">
+      <div class="card-head" style="border-left-color:#16a34a">
+        <h3>📌 Kiválasztott munkatétel</h3>
+      </div>
+      <div class="card-body" style="font-size:14px;font-weight:600;color:#1f2937">
+        ${esc(tetelDisp)}
+      </div>
+    </div>`;
+  })() : ''}
+
   <div class="card">
     <div class="card-head" style="border-left-color:#78297d">
       <h3>Rögzített tételek</h3>
@@ -966,15 +972,13 @@ function renderRogzites() {
       : `<div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>#</th><th>Munkatétel</th><th>Anyagkód</th>
-            <th>Mennyiség</th><th>Egység</th><th>Megjegyzés</th><th>Műveletek</th>
+            <th>#</th><th>Anyag</th>
+            <th>Mennyiség</th><th>Egység</th><th>Megjegy.</th><th>Törlés</th>
           </tr></thead>
           <tbody>
             ${S.tetelek.map((t,i) => {
               const tf = t.fields;
-              const tetelDisp = tf['T_x00e9_telk_x00f3_d'] || getTetelLabel(tf.T_x00e9_telk_x00f3_dId);
               const anyagDisp = tf['Anyagk_x00f3_d']       || getAnyagLabel(tf.Anyagk_x00f3_dId);
-              // Anyag egység a lookupból vagy az anyagok listából
               const anyagId = tf.Anyagk_x00f3_dId || tf['Anyagk_x00f3_d']?.Id;
               let egyseg = tf['Anyagk_x00f3_d_Egys_x00e9_g'] || tf.Egys_x00e9_g;
               if (!egyseg && anyagId) {
@@ -984,7 +988,6 @@ function renderRogzites() {
               return `
               <tr>
                 <td class="ml-meta">${i+1}</td>
-                <td>${tetelDisp}</td>
                 <td>${anyagDisp}</td>
                 <td><strong>${fmtNum(tf.Mennyis_x00e9_g)}</strong></td>
                 <td class="ml-meta">${esc(egyseg)}</td>
@@ -1081,10 +1084,11 @@ function bind() {
       document.getElementById(id)?.addEventListener('input', syncForm);
     });
 
-    // Anyag selectnél change event a render-hez
+    // Anyag selectnél change → render, majd fókusz a mennyiség mezőre
     document.getElementById(`f-anyag-${index}`)?.addEventListener('change', () => {
       syncForm();
       render();
+      setTimeout(() => document.getElementById(`f-menny-${index}`)?.focus(), 0);
     });
   });
 
