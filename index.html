@@ -557,6 +557,15 @@ async function doSave() {
     setState({ error:'Legalább egy anyagtételt meg kell adni mennyiséggel!' }); return;
   }
 
+  // Max mennyiség validáció
+  for (const row of validRows) {
+    const anyag = S.anyagok.find(a => String(a.id) === row.anyagId);
+    const maxVal = anyag?.fields?.max ?? anyag?.fields?.Max;
+    if (maxVal && parseFloat(row.mennyiseg) > parseFloat(maxVal)) {
+      setState({ error:`A megadott mennyiség (${row.mennyiseg}) meghaladja a megengedett maximumot (${maxVal}) a kiválasztott anyagnál!` }); return;
+    }
+  }
+
   setState({ saving:true, error:null });
   try {
     // Minden érvényes sort mentünk
@@ -909,13 +918,21 @@ function renderRogzites() {
               <label class="f-label">Anyagkód <span class="req">*</span></label>
               <select class="f-ctrl" id="f-anyag-${index}" ${!S.selectedTetelId ? 'disabled' : ''}>
                 <option value="">– Válassz anyagot –</option>
-                ${S.anyagok.map(a => {
-                  const af = a.fields;
-                  const kod = af.Title || '';
-                  const name = af.field_1 || '';
-                  const label = kod && name ? `${kod} – ${name}` : (kod || name || '');
-                  return `<option value="${esc(a.id)}"${String(a.id)===row.anyagId?' selected':''}>${esc(label)}</option>`;
-                }).join('')}
+                ${(() => {
+                  const masSorbanKivalasztva = new Set();
+                  S.anyagRows.forEach((r, i) => {
+                    if (i !== index && r.anyagId) masSorbanKivalasztva.add(String(r.anyagId));
+                  });
+                  return S.anyagok
+                    .filter(a => !masSorbanKivalasztva.has(String(a.id)) || String(a.id) === row.anyagId)
+                    .map(a => {
+                      const af = a.fields;
+                      const kod = af.Title || '';
+                      const name = af.field_1 || '';
+                      const label = kod && name ? `${kod} – ${name}` : (kod || name || '');
+                      return `<option value="${esc(a.id)}"${String(a.id)===row.anyagId?' selected':''}>${esc(label)}</option>`;
+                    }).join('');
+                })()}
               </select>
             </div>
             <div class="f-group">
@@ -927,6 +944,11 @@ function renderRogzites() {
                   ${row.anyagId ? esc(S.anyagok.find(a => String(a.id) === row.anyagId)?.fields?.Egys_x00e9_g || '–') : '–'}
                 </div>
               </div>
+              ${(() => {
+                const anyag = row.anyagId ? S.anyagok.find(a => String(a.id) === row.anyagId) : null;
+                const maxVal = anyag?.fields?.max ?? anyag?.fields?.Max;
+                return maxVal ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px">Max: ${esc(String(maxVal))}</div>` : '';
+              })()}
             </div>
             <div class="f-group full">
               <label class="f-label">Megjegyzés</label>
