@@ -923,6 +923,10 @@ function renderRogzites() {
                   S.anyagRows.forEach((r, i) => {
                     if (i !== index && r.anyagId) masSorbanKivalasztva.add(String(r.anyagId));
                   });
+                  S.tetelek.forEach(t => {
+                    const rid = t.fields.Anyagk_x00f3_dId;
+                    if (rid) masSorbanKivalasztva.add(String(rid));
+                  });
                   return S.anyagok
                     .filter(a => !masSorbanKivalasztva.has(String(a.id)) || String(a.id) === row.anyagId)
                     .map(a => {
