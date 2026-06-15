@@ -1,1183 +1,1731 @@
-<!DOCTYPE html>
-<html lang="hu">
-<head>
+<!doctype html>
+<html lang="hu"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vidanet – Anyagrögzítő</title>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
+<title>Vidanet · Anyagrögzítő</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<script src="https://alcdn.msauth.net/browser/2.32.2/js/msal-browser.min.js"></script>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f3f4f6;color:#1f2937;min-height:100vh;font-size:14px}
+  :root {
+    --vn-orange:     #FF7600;
+    --vn-orange-dk:  #d96400;
+    --vn-orange-lt:  #fff3e6;
+    --vn-orange-mid: #ffd9b3;
+    --vn-purple:     #78297D;
+    --vn-purple-dk:  #5c1f60;
+    --vn-purple-lt:  #f5edf6;
+    --vn-purple-mid: #d4a8d7;
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:#f1f5f9}
-::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+    --success: oklch(52% 0.14 145);
+    --danger:  oklch(52% 0.16 27);
+    --warn:    oklch(70% 0.14 85);
 
-/* ── SETUP SCREEN ── */
-.setup-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;
-  background:linear-gradient(135deg,#fff7f0 0%,#f3f4f6 60%,#f5eeff 100%)}
-.setup-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;
-  padding:40px;width:460px;box-shadow:0 8px 32px rgba(0,0,0,.08)}
-.setup-card .brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
-.setup-card .brand span{font-size:22px;font-weight:800;color:#1f2937}
-.setup-card h2{font-size:15px;font-weight:700;color:#FF7600;text-transform:uppercase;
-  letter-spacing:1.5px;margin-bottom:6px}
-.setup-card p{color:#6b7280;font-size:13px;margin-bottom:24px;line-height:1.6}
-.setup-note{background:#fff7f0;border:1px solid #fde0c0;border-radius:8px;
-  padding:14px 16px;margin-bottom:24px;font-size:12px;color:#92400e;line-height:1.8}
-.setup-note code{background:#ffedd5;padding:2px 6px;border-radius:3px;color:#c2410c;font-family:monospace}
-.setup-field{margin-bottom:16px}
-.setup-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.8px;color:#6b7280;margin-bottom:6px}
-.setup-field input{width:100%;padding:10px 14px;background:#f9fafb;border:1.5px solid #e5e7eb;
-  border-radius:7px;color:#1f2937;font-size:13px;font-family:monospace;outline:none;transition:border-color .2s}
-.setup-field input:focus{border-color:#FF7600;box-shadow:0 0 0 3px #FF760015}
-.setup-field input::placeholder{color:#9ca3af}
+    --bg:       oklch(97.2% 0.003 280);
+    --surface:  oklch(100% 0 0);
+    --border:   oklch(91% 0.004 280);
+    --border2:  oklch(84% 0.006 280);
 
-/* ── LOGIN ── */
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;
-  background:linear-gradient(135deg,#fff7f0 0%,#f3f4f6 60%,#f5eeff 100%)}
-.login-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;
-  padding:48px 40px;width:380px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08)}
-.login-card h1{font-size:30px;font-weight:900;letter-spacing:-1px;color:#1f2937;margin-bottom:4px}
-.login-card h2{font-size:12px;font-weight:600;color:#FF7600;text-transform:uppercase;
-  letter-spacing:2px;margin-bottom:20px}
-.login-card p{color:#6b7280;font-size:13px;margin-bottom:28px;line-height:1.7}
-.login-card .hint{color:#9ca3af;font-size:11px;margin-top:14px}
+    --txt:      oklch(16% 0.01 280);
+    --txt2:     oklch(48% 0.012 280);
+    --txt3:     oklch(68% 0.01 280);
 
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;
-  border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;
-  white-space:nowrap;text-decoration:none}
-.btn-primary{background:#FF7600;color:#fff}
-.btn-primary:hover{background:#e06800}
-.btn-primary:disabled{background:#fed7aa;color:#fff;cursor:not-allowed}
-.btn-success{background:#16a34a;color:#fff}
-.btn-success:hover{background:#15803d}
-.btn-outline{background:transparent;color:#FF7600;border:1.5px solid #FF7600}
-.btn-outline:hover{background:#fff7f0}
-.btn-danger{background:#dc2626;color:#fff}
-.btn-danger:hover{background:#b91c1c}
-.btn-ghost{background:none;border:none;color:#9ca3af;cursor:pointer;padding:5px 8px;
-  border-radius:5px;font-size:13px;transition:all .15s}
-.btn-ghost:hover{background:#fee2e2;color:#dc2626}
-.btn-sm{padding:5px 12px;font-size:12px}
-.btn-ms{width:100%;padding:14px 20px;background:#FF7600;color:#fff;border:none;
-  border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s}
-.btn-ms:hover{background:#e06800}
+    --success-bg: #edfaf3; --success-txt: #1a7a46; --success-bd: #b3e8ce;
+    --warn-bg:    #fff8e6; --warn-txt:    #8a6000; --warn-bd:    #f5d98a;
+    --info-bg:    #f5edf6; --info-txt:    #5c1f60; --info-bd:    #d4a8d7;
+    --danger-bg:  #fff1ee; --danger-txt:  #c0311a; --danger-bd:  #f5c0b5;
 
-/* ── LAYOUT ── */
-.layout{display:flex;height:100vh;overflow:hidden}
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
 
-/* ── SIDEBAR ── */
-.sidebar{width:256px;background:#fff;border-right:1px solid #e5e7eb;
-  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
-.sb-head{padding:18px 16px 14px;border-bottom:1px solid #f3f4f6}
-.sb-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.sb-brand-name{font-size:16px;font-weight:800;color:#1f2937}
-.sb-user{font-size:11px;color:#9ca3af;line-height:1.5}
-.sb-user strong{color:#4b5563;display:block;font-size:12px}
-.sb-section{padding:14px 10px;flex:1}
-.sb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
-  color:#d1d5db;padding:0 8px;margin-bottom:6px;margin-top:10px}
-.sb-label:first-child{margin-top:0}
-.sb-item{width:100%;text-align:left;padding:9px 10px;background:none;border:none;
-  color:#6b7280;font-size:13px;font-weight:500;cursor:pointer;border-radius:6px;
-  display:flex;align-items:center;gap:8px;transition:all .15s}
-.sb-item:hover{background:#fff7f0;color:#FF7600}
-.sb-item.active{background:#FF760015;color:#FF7600;font-weight:600;border-left:3px solid #FF7600;padding-left:7px}
-.sb-item .badge-cnt{margin-left:auto;font-size:10px;background:#fff3e8;
-  color:#FF7600;padding:2px 7px;border-radius:10px;font-weight:700}
-.sb-filters{padding:12px 10px;border-top:1px solid #f3f4f6}
-.sb-filters input,.sb-filters select{width:100%;padding:8px 10px;background:#f9fafb;
-  border:1px solid #e5e7eb;border-radius:6px;color:#1f2937;font-size:12px;outline:none;
-  margin-bottom:8px;transition:border-color .2s}
-.sb-filters input:focus,.sb-filters select:focus{border-color:#FF7600}
-.sb-filters input::placeholder{color:#9ca3af}
-.sb-filters select option{background:#fff;color:#1f2937}
-.sb-footer{padding:10px;border-top:1px solid #f3f4f6}
-.sb-logout{width:100%;padding:8px 12px;background:none;border:1px solid #e5e7eb;
-  border-radius:6px;color:#6b7280;font-size:12px;cursor:pointer;transition:all .15s}
-.sb-logout:hover{border-color:#FF7600;color:#FF7600;background:#fff7f0}
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.07);
 
-/* ── MAIN CONTENT ── */
-.main{flex:1;overflow-y:auto;background:#f3f4f6}
-.main-inner{padding:24px;max-width:1120px}
-.page-title{font-size:22px;font-weight:900;color:#1f2937;letter-spacing:-.5px;margin-bottom:4px}
-.page-sub{font-size:13px;color:#9ca3af;margin-bottom:22px}
+    --font: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'Segoe UI Mono', 'Cascadia Code', ui-monospace, monospace;
+  }
 
-/* ── CARDS ── */
-.card{background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:18px;
-  box-shadow:0 1px 4px rgba(0,0,0,.04)}
-.card-head{padding:14px 18px;border-bottom:1px solid #f3f4f6;display:flex;
-  justify-content:space-between;align-items:center;background:#f9fafb;
-  border-left:4px solid #FF7600}
-.card-head h3{font-size:13px;font-weight:700;color:#1f2937}
-.card-body{padding:18px}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── TABLE ── */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{padding:9px 12px;background:#f9fafb;text-align:left;font-weight:700;color:#9ca3af;
-  font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e5e7eb;
-  white-space:nowrap;cursor:pointer;user-select:none}
-th:hover{background:#f3f4f6}
-td{padding:11px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
-tr:last-child td{border-bottom:none}
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--txt);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-/* ── WORK ORDER ROWS ── */
-.ml-row{cursor:pointer;transition:background .1s}
-.ml-row:hover td{background:#fff7f0}
-.ml-row.active td{background:#fff3e8;border-bottom-color:#fde0c0}
-.ml-num{font-weight:800;color:#FF7600;font-size:14px}
-.ml-name{font-weight:600;color:#1f2937}
-.ml-meta{color:#9ca3af;font-size:12px}
-.ml-type{font-weight:800;color:#78297d;font-size:14px}
+  .app-shell {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+  }
 
-/* ── MUNKALAP HEADER ── */
-.ml-header{background:#fff;border-radius:10px;border:1px solid #e5e7eb;
-  padding:18px 20px;margin-bottom:18px;border-left:4px solid #FF7600;
-  display:grid;grid-template-columns:repeat(3,1fr);gap:12px 20px}
-.ml-field label{font-size:10px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.8px;color:#9ca3af;display:block;margin-bottom:3px}
-.ml-field span{font-size:14px;font-weight:600;color:#1f2937}
-.ml-field.hl span{color:#78297d;font-size:20px;font-weight:900}
-.ml-field span.ml-type{color:#78297d;font-size:20px;font-weight:900}
+  /* ── Top bar ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-logo-img {
+    height: 28px; width: auto; display: block;
+  }
+  .topbar-user {
+    font-size: 12px; color: var(--txt2); font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .topbar-divider {
+    width: 1px; height: 18px; background: var(--border);
+    margin: 0 2px;
+  }
+  .topbar-title {
+    font-size: 13px; color: var(--txt3); font-weight: 400;
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mono-sm { font-family: var(--mono); font-size: 12px; color: var(--txt3); }
 
-/* ── FORM ── */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.f-group{display:flex;flex-direction:column;gap:5px}
-.f-group.full{grid-column:1/-1}
-.f-label{font-size:11px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.6px;color:#6b7280}
-.f-label .req{color:#dc2626;margin-left:2px}
-.f-ctrl{padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:7px;
-  font-size:14px;color:#1f2937;background:#fff;outline:none;
-  transition:border-color .15s;width:100%;font-family:inherit}
-.f-ctrl:focus{border-color:#FF7600;box-shadow:0 0 0 3px #FF760015}
-.f-ctrl:disabled{background:#f9fafb;color:#9ca3af}
+  .main {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .main-ed {
+    max-width: 980px;
+  }
 
-/* ── ALERTS ── */
-.alert{padding:11px 15px;border-radius:7px;font-size:13px;margin-bottom:14px;
-  display:flex;align-items:center;gap:10px}
-.alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-.alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
-.alert-close{margin-left:auto;background:none;border:none;cursor:pointer;
-  color:currentColor;opacity:.6;font-size:16px;line-height:1;padding:0 4px}
-.alert-close:hover{opacity:1}
+  .page-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .page-hdr h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--txt);
+    letter-spacing: -.01em;
+  }
+  .page-hdr h1 i { color: var(--vn-purple); margin-right: 8px; }
+  .page-hdr .sub {
+    font-size: 13px;
+    color: var(--txt3);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .page-hdr-right {
+    display: flex; gap: 8px;
+  }
 
-/* ── SPINNER ── */
-.spin{display:inline-block;width:16px;height:16px;border:2.5px solid currentColor;
-  border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading{display:flex;align-items:center;justify-content:center;padding:48px;
-  color:#9ca3af;gap:12px;font-size:14px}
-.loading .spin{width:22px;height:22px;border-width:3px}
-.empty{text-align:center;padding:40px;color:#9ca3af}
-.empty svg{margin-bottom:10px}
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 510;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid transparent;
+    padding: 7px 16px;
+    transition: background .12s, border-color .12s, box-shadow .12s, transform .08s;
+    text-decoration: none;
+    text-wrap: nowrap;
+    user-select: none;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(120 41 125 / .18);
+  }
+  .btn-primary {
+    background: var(--vn-orange); color: white; border-color: var(--vn-orange);
+  }
+  .btn-primary:hover { background: var(--vn-orange-dk); border-color: var(--vn-orange-dk); }
+  .btn-secondary {
+    background: transparent; color: var(--vn-purple); border-color: var(--vn-purple);
+  }
+  .btn-secondary:hover { background: var(--vn-purple-lt); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--txt2);
+    border-color: var(--border2);
+  }
+  .btn-ghost:hover { background: #f0f0f5; }
+  .btn-danger-ghost {
+    background: transparent;
+    color: var(--danger-txt);
+    border-color: var(--danger-bd);
+    padding: 4px 9px;
+    font-size: 12px;
+    border-radius: var(--radius-sm);
+  }
+  .btn-danger-ghost:hover { background: var(--danger-bg); }
 
-/* ── BADGES ── */
-.badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
-.badge-ktv{background:#fff3e8;color:#FF7600}
-.badge-ftth{background:#f0fdf4;color:#16a34a}
-.badge-egyeb{background:#faf5e4;color:#78297d}
-.badge-cnt{background:#fff3e8;color:#FF7600}
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
 
-/* ── ACTION CELL ── */
-.act-cell{display:flex;gap:4px;align-items:center}
+  /* ── Notification ── */
+  #notif {
+    display: none;
+    padding: 9px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 510;
+    margin-bottom: 14px;
+    border: 1px solid transparent;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn .2s ease;
+  }
+  #notif.show { display: flex; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ── TABS ── */
-.tabs{display:flex;gap:2px;background:#f3f4f6;padding:3px;border-radius:8px;
-  margin-bottom:18px;width:fit-content}
-.tab{padding:7px 18px;border:none;background:transparent;color:#6b7280;
-  font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .15s}
-.tab.active{background:#fff;color:#FF7600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  /* ── Table ── */
+  .tbl-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  thead th {
+    padding: 9px 14px;
+    font-size: 10px;
+    font-weight: 590;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--txt3);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--txt);
+  }
+  tbody tr { transition: background .12s; cursor: pointer; }
+  tbody tr:hover { background: var(--vn-orange-lt); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr td:first-child { color: var(--txt3); }
+  tbody tr td:nth-child(6) { font-family: var(--mono); font-size: 12px; color: var(--txt2); }
+  tbody tr td:nth-child(7),
+  tbody tr td:nth-child(8) { font-size: 12px; color: var(--txt2); }
 
-/* ── STAT BOXES ── */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.stat-box{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;
-  border-top:3px solid #FF7600}
-.stat-box label{font-size:10px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.8px;color:#9ca3af;display:block;margin-bottom:4px}
-.stat-box .val{font-size:22px;font-weight:900;color:#1f2937}
-.stat-box .sub{font-size:11px;color:#9ca3af;margin-top:2px}
+  .mbadge {
+    font-size: 10px;
+    font-weight: 590;
+    letter-spacing: .04em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .mbadge-hibajav  { background: oklch(92% 0.04 30); color: oklch(40% 0.14 30); }
+  .mbadge-letesit  { background: var(--vn-purple-lt); color: var(--vn-purple-dk); }
+  .mbadge-belso    { background: oklch(95% 0.004 280); color: var(--txt2); }
+  .mbadge-hfc  { background: var(--warn-bg);     color: var(--warn-txt); }
+  .mbadge-gpon { background: var(--info-bg);      color: var(--info-txt); }
+  .mbadge-fd   { background: #f0f0f5;             color: var(--txt2); }
+  .mbadge-lg   { background: #eef5ff;             color: #2456a0; }
 
-@media(max-width:900px){
-  .stats{grid-template-columns:1fr 1fr}
-  .ml-header{grid-template-columns:1fr 1fr}
-  .form-grid{grid-template-columns:1fr}
-}
-@media(max-width:640px){
-  .sidebar{width:100%;height:auto;flex-direction:row;flex-wrap:wrap}
-  .main{height:calc(100vh - 120px)}
-  .stats{grid-template-columns:1fr 1fr}
-}
+  .ml-szam {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vn-purple-dk);
+  }
+
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 510;
+  }
+  .status-dot::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.kesz::before { background: var(--success); }
+  .status-dot.foly::before { background: var(--vn-orange); }
+  .status-dot.uj::before   { background: var(--txt3); }
+
+  .empty-s {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--txt3);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .empty-s i { font-size: 32px; display: block; margin-bottom: 12px; color: var(--vn-purple-mid); }
+
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--vn-orange);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .stats-bar {
+    display: flex;
+    gap: 20px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--txt2);
+  }
+  .stat-item strong {
+    color: var(--vn-purple);
+    font-size: 17px;
+    font-weight: 590;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .srch-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .srch-bar input {
+    flex: 1;
+    min-width: 200px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--txt);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px 7px 32px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .srch-bar input:focus {
+    border-color: var(--vn-orange);
+    box-shadow: 0 0 0 3px oklch(65% 0.18 48 / .12);
+  }
+  .srch-bar input::placeholder { color: var(--txt3); }
+  .srch-wrap { position: relative; flex: 1; min-width: 200px; }
+  .srch-wrap .search-ico {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--txt3); font-size: 16px; pointer-events: none;
+  }
+  .srch-bar select {
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--txt);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 7px 28px 7px 10px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239d9db0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: border-color .15s;
+  }
+  .srch-bar select:focus { border-color: var(--vn-orange); }
+
+  /* ── Login screen ── */
+  .login-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    z-index: 9999;
+    background: linear-gradient(145deg, var(--vn-purple-dk) 0%, var(--vn-purple) 45%, var(--vn-orange) 100%);
+  }
+  .login-screen.hidden { display: none; }
+  .login-card {
+    margin: auto;
+    width: 400px;
+    max-width: 90vw;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 24px 80px rgba(0,0,0,.25);
+    padding: 44px 36px 32px;
+    text-align: center;
+  }
+  .login-card .logo {
+    height: 48px;
+    width: auto;
+    margin-bottom: 6px;
+  }
+  .login-card h1 {
+    font-size: 21px;
+    font-weight: 590;
+    color: var(--txt);
+    letter-spacing: -.01em;
+    margin-bottom: 4px;
+  }
+  .login-card .sub {
+    font-size: 13px;
+    color: var(--txt3);
+    margin-bottom: 28px;
+  }
+  .login-card .btn-login {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--vn-orange);
+    color: white;
+    border: none;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 510;
+    padding: 12px 38px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background .15s, transform .08s;
+    box-shadow: 0 4px 14px rgba(255,118,0,.25);
+  }
+  .login-card .btn-login:hover { background: var(--vn-orange-dk); }
+  .login-card .btn-login:active { transform: scale(.97); }
+  .login-card .btn-login i { font-size: 18px; }
+  .login-card .login-footer {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--txt3);
+    line-height: 1.6;
+    letter-spacing: .01em;
+  }
+  .login-error {
+    display: none;
+    background: oklch(92% 0.04 30);
+    color: oklch(40% 0.14 30);
+    border: 1px solid oklch(82% 0.05 30);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: left;
+  }
+  .login-error.show { display: block; }
+  .login-spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle;
+  }
+
+  /* ── Editor styles ── */
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: .02em;
+  }
+  .badge-danger  { background: var(--danger-bg);  color: var(--danger-txt);  border-color: var(--danger-bd); }
+  .badge-info    { background: var(--info-bg);    color: var(--info-txt);    border-color: var(--info-bd); }
+  .badge-neutral { background: #f0f0f5;           color: var(--txt2);        border-color: var(--border2); }
+  .badge-warn    { background: var(--warn-bg);    color: var(--warn-txt);    border-color: var(--warn-bd); }
+
+  .sec-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-bottom: 10px;
+  }
+  .field-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--txt2);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  input[type=text], input[type=date], input[type=number] {
+    width: 100%;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--txt);
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus {
+    border-color: var(--vn-orange);
+    box-shadow: 0 0 0 3px rgba(255,118,0,.13);
+    background: #fff;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  .pill-group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pill {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1.5px solid var(--border2);
+    border-radius: 20px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--txt2);
+    font-family: var(--font);
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pill:hover { background: #f0f0f5; border-color: var(--vn-purple-mid); }
+  .pill.active-orange { background: var(--vn-orange-lt); color: var(--vn-orange-dk); border-color: var(--vn-orange); }
+  .pill.active-purple { background: var(--vn-purple-lt); color: var(--vn-purple);   border-color: var(--vn-purple); }
+  .pill.active-warn   { background: var(--warn-bg);      color: var(--warn-txt);    border-color: var(--warn-bd); }
+  .pill.active-danger { background: var(--danger-bg);    color: var(--danger-txt);  border-color: var(--danger-bd); }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--vn-purple);
+    background: var(--vn-purple-lt);
+    border: 1px solid var(--vn-purple-mid);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-top: 12px;
+  }
+
+  .tab-strip {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 0;
+  }
+  .tab-btn {
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--txt3);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab-btn:hover { color: var(--txt2); }
+  .tab-btn.ta {
+    color: var(--vn-orange);
+    border-bottom-color: var(--vn-orange);
+  }
+  .tcnt {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #f0f0f5;
+    color: var(--txt3);
+    font-weight: 600;
+  }
+  .tab-btn.ta .tcnt {
+    background: var(--vn-orange-lt);
+    color: var(--vn-orange-dk);
+  }
+
+  .search-wrap {
+    position: relative;
+    border: 1px solid var(--border2);
+    border-bottom: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--surface);
+    padding: 9px 12px;
+  }
+  .search-wrap input { background: var(--bg); padding-left: 32px; }
+  .search-ico {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--txt3);
+    font-size: 16px;
+    pointer-events: none;
+  }
+  .mat-list {
+    border: 1px solid var(--border2);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    overflow: hidden;
+    max-height: 290px;
+    overflow-y: auto;
+    background: var(--surface);
+  }
+  .mat-list::-webkit-scrollbar { width: 6px; }
+  .mat-list::-webkit-scrollbar-track { background: transparent; }
+  .mat-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .mat-item {
+    display: grid;
+    grid-template-columns: 20px minmax(0,1fr) 140px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+    cursor: pointer;
+  }
+  .mat-item:last-child { border-bottom: none; }
+  .mat-item:hover { background: var(--vn-orange-lt); }
+  .mat-item:hover .mat-n { color: var(--vn-orange-dk); }
+  .mat-c { font-family: var(--mono); font-size: 10px; color: var(--txt3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mat-n { font-size: 13px; color: var(--txt); line-height: 1.35; margin-top: 1px; }
+
+  .qty-grp { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .qty-f { width: 64px; text-align: right; font-size: 13px; padding: 5px 8px; }
+  .qty-unit { font-size: 11px; color: var(--txt3); min-width: 20px; text-align: left; }
+
+  input[type=checkbox] {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    accent-color: var(--vn-orange);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .added-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .added-tbl thead th {
+    padding: 8px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--txt3);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .added-tbl td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--txt);
+  }
+  .added-tbl tr:last-child td { border-bottom: none; }
+  .added-tbl tr:hover td { background: #fafafa; }
+  .ck { font-family: var(--mono); font-size: 10px; color: var(--txt3); }
+  .qnum { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--vn-purple-dk); }
+
+  .bot-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    margin-top: 14px;
+  }
+  .tot-info { font-size: 13px; color: var(--txt2); }
+  .tot-info strong { color: var(--vn-purple); }
+
+  .step-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-hdr-left { display: flex; align-items: center; gap: 10px; }
+  .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--vn-orange);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-label { font-size: 14px; font-weight: 600; color: var(--txt); }
+  .step-sub { font-size: 12px; color: var(--txt3); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  .munkalap-card {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .ml-accent-bar {
+    width: 4px;
+    flex-shrink: 0;
+    background: var(--vn-orange);
+  }
+  .ml-body {
+    flex: 1;
+    padding: 18px 20px;
+  }
+  .ml-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px 20px;
+  }
+  .ml-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ml-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--txt3);
+  }
+  .ml-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--txt);
+  }
+  .ml-value.highlight {
+    color: var(--vn-purple);
+    font-weight: 600;
+  }
+
+  .mod-cloak {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(2px);
+  }
+  .mod-cloak.show { display: flex; }
+  .mod-box {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    padding: 28px 32px 24px;
+    max-width: 420px;
+    width: 90vw;
+    text-align: center;
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(.95) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+  .mod-box h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--txt);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .mod-box h3 i { color: var(--vn-orange); font-size: 22px; }
+  .mod-box p {
+    font-size: 13.5px;
+    color: var(--txt2);
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+  .mod-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .card-pad {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  @media (max-width: 768px) {
+    .main { padding: 16px; }
+    .topbar { padding: 0 16px; }
+    table { font-size: 12px; }
+    thead th, td { padding: 8px 10px; }
+    .page-hdr { flex-direction: column; align-items: stretch; }
+    .page-hdr-right { justify-content: flex-end; }
+    .stats-bar { gap: 14px; padding: 12px 16px; }
+  }
+  @media (max-width: 620px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .ml-grid { grid-template-columns: 1fr 1fr; }
+    .main-ed .main { padding: 14px; }
+    .tab-btn { font-size: 12px; padding: 8px 10px; }
+  }
 </style>
 </head>
 <body>
-<div id="app"><div class="loading"><div class="spin"></div> Inicializálás...</div></div>
 
-<script>
-'use strict';
-
-/* ══════════════════════════════════════════════════════════════
-   CONFIG – Azure App Registration adatai
-══════════════════════════════════════════════════════════════ */
-const CONFIG = {
-  clientId: '9aad78c7-b2c6-4f08-9a77-29872311261f',     // App ID az Azure portálról
-  tenantId: 'e2c00272-db18-4cff-87a2-44d63edfa62b',     // Tenant ID az Azure portálról
-  siteUrl: 'https://vidanetzrt.sharepoint.com/sites/GAI_Muszak',  // SharePoint webhely URL
-  ownerGroupId: '8143cc71-fdbb-402d-9f45-2c83d6961825'  // Tulajdonos csoport ID
-};
-
-const SHAREPOINT = {
-  lists: {
-    munkalapok:       'e4f1e621-ae57-45a4-b366-704e0debf06e',
-    munkaelemekTorzs: 'f507efca-2041-43fe-b372-7ea0acb6d2eb',
-    anyagokTorzs:     'bbce5ceb-4465-4783-ad63-cf1b3effff56',
-    munkalapTetelek:  'e0faec7f-a1e3-45a9-b297-9314e8959464'
-  }
-};
-
-// SharePoint REST API scope – explicit ReadWrite, nem .default
-function getScopes() {
-  try {
-    const origin = new URL(CONFIG.siteUrl).origin;
-    return [
-      `${origin}/Sites.ReadWrite.All`,
-      `${origin}/AllSites.Write`
-    ];
-  } catch {
-    return ['https://sharepoint.com/Sites.ReadWrite.All'];
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   STATE
-══════════════════════════════════════════════════════════════ */
-let msalApp = null;
-
-let S = {
-  screen: 'login',
-  account: null,
-  munkalapok: [],
-  munkaelemek: [],
-  anyagok: [],
-  tetelek: [],
-  selectedML: null,
-  view: 'munkalapok',
-  loading: false,
-  saving: false,
-  error: null,
-  success: null,
-  search: '',
-  kivFilter: '',
-  sortBy: 'field_1',
-  sortDir: 'desc',
-  selectedTetelId: null,
-  anyagRows: [{ anyagId: '', mennyiseg: '', megjegyzes: '' }],
-  editId: null
-};
-
-function setState(patch, noRender) {
-  Object.assign(S, patch);
-  if (!noRender) render();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   MSAL
-══════════════════════════════════════════════════════════════ */
-function buildMsal() {
-  return new msal.PublicClientApplication({
-    auth: {
-      clientId: CONFIG.clientId,
-      authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
-      redirectUri: window.location.href.split('?')[0].split('#')[0]
-    },
-    cache: { cacheLocation: 'sessionStorage' }
-  });
-}
-
-async function getToken() {
-  const accounts = msalApp.getAllAccounts();
-  if (!accounts.length) throw new Error('Nincs bejelentkezett felhasználó');
-  const scopes = getScopes();
-  try {
-    const r = await msalApp.acquireTokenSilent({ scopes, account: accounts[0] });
-    return r.accessToken;
-  } catch {
-    try {
-      const r = await msalApp.acquireTokenPopup({ scopes });
-      return r.accessToken;
-    } catch {
-      await msalApp.acquireTokenRedirect({ scopes });
-    }
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SHAREPOINT REST API
-══════════════════════════════════════════════════════════════ */
-function spApi() { return `${CONFIG.siteUrl}/_api/web`; }
-
-function normalizeItem(item) {
-  const id = String(item.Id ?? item.id ?? '');
-  let fields = Object.fromEntries(
-    Object.entries(item).filter(([k]) =>
-      k !== 'Id' && k !== '__metadata' && !k.startsWith('odata.')
-    )
-  );
-  
-  // Felelős mező kezelése - ha StringId vagy Id tartalmaz | karaktert
-  ['Felel_x0151_sId', 'Felel_x0151_sStringId'].forEach(fn => {
-    if (item[fn]) {
-      const val = String(item[fn]);
-      if (val.includes('|')) fields.FelelosEmail = val.split('|').pop().toLowerCase();
-    }
-  });
-  
-  return { id, fields };
-}
-
-async function apiFetch(url, opts={}) {
-  const token = await getToken();
-  const method = (opts.method || 'GET').toUpperCase();
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    Accept: 'application/json;odata=nometadata',
-    ...(opts.headers || {})
-  };
-  if (method !== 'GET' && method !== 'DELETE') {
-    headers['Content-Type'] = 'application/json;odata=nometadata';
-  }
-  const resp = await fetch(url, { ...opts, headers });
-  if (resp.status === 204) return null;
-  const contentType = resp.headers.get('content-type') || '';
-  if (contentType.includes('xml')) {
-    const text = await resp.text();
-    throw new Error(`SharePoint XML választ küldött (HTTP ${resp.status}). Ellenőrizd a jogosultságokat és a webhely URL-t.`);
-  }
-  if (!resp.ok) {
-    try {
-      const data = await resp.json();
-      const msg = data?.error?.message?.value || data?.error?.message || `HTTP ${resp.status}`;
-      throw new Error(msg);
-    } catch(e) {
-      if (e instanceof SyntaxError) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-      throw e;
-    }
-  }
-  const text = await resp.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch(e) {
-    return null;
-  }
-}
-
-async function getItems(listId, filter='') {
-  let url = `${spApi()}/lists(guid'${listId}')/items?$top=999&$select=*`;
-  if (filter) url += `&$filter=${encodeURIComponent(filter)}`;
-  const all = [];
-  while (url) {
-    const d = await apiFetch(url);
-    const items = d?.value || d?.d?.results || [];
-    all.push(...items.map(normalizeItem));
-    url = d?.['@odata.nextLink'] || d?.d?.__next || null;
-  }
-  return all;
-}
-
-async function getCurrentUserSpId() {
-  const d = await apiFetch(`${spApi()}/currentuser?$select=Id,Email,Title`);
-  const id = d?.Id ?? d?.d?.Id ?? null;
-  const email = (d?.Email ?? d?.d?.Email ?? '').toLowerCase();
-  return { id: id ? String(id) : null, email };
-}
-
-async function createItem(listId, fields) {
-  const resp = await apiFetch(`${spApi()}/lists(guid'${listId}')/items`, {
-    method: 'POST',
-    body: JSON.stringify(fields)
-  });
-  return resp?.d ?? resp;
-}
-
-async function updateItem(listId, itemId, fields) {
-  return apiFetch(`${spApi()}/lists(guid'${listId}')/items(${itemId})`, {
-    method: 'PATCH',
-    headers: { 'If-Match': '*' },
-    body: JSON.stringify(fields)
-  });
-}
-
-async function deleteItem(listId, itemId) {
-  return apiFetch(`${spApi()}/lists(guid'${listId}')/items(${itemId})`, {
-    method: 'DELETE',
-    headers: { 'If-Match': '*' }
-  });
-}
-
-/* ══════════════════════════════════════════════════════════════
-   DATA LOADING
-══════════════════════════════════════════════════════════════ */
-async function loadAll() {
-  setState({ loading:true, error:null });
-  try {
-    // 1. Bejelentkezett user adatainak lekérése
-    const cu = await getCurrentUserSpId();
-    if (!cu.id) {
-      throw new Error('Nincs bejelentkezett felhasználó');
-    }
-    console.log('User SP ID:', cu.id, 'Email:', cu.email);
-
-    // 2. Csoportok lekérdezése a felhasználóhoz
-    const isOwner = await checkUserIsOwner(cu.email);
-    console.log('User is owner:', isOwner);
-
-    // 3. Munkalapok lekérése
-    let spFilter = '';
-    if (!isOwner) {
-      // Vendég: csak a saját munkalapok
-      spFilter = `Felel_x0151_sId eq ${cu.id}`;
-    }
-
-    const [munkalapok, munkaelemek, anyagok] = await Promise.all([
-      getItems(SHAREPOINT.lists.munkalapok, spFilter),
-      getItems(SHAREPOINT.lists.munkaelemekTorzs),
-      getItems(SHAREPOINT.lists.anyagokTorzs)
-    ]);
-
-    console.log(`Munkalapok betöltve: ${munkalapok.length} db (owner: ${isOwner})`);
-
-    munkalapok.sort((a,b) => (b.fields.field_1||0)-(a.fields.field_1||0));
-    setState({ munkalapok, munkaelemek, anyagok });
-  } catch(e) {
-    setState({ error:`Adatok betöltési hiba: ${e.message}` });
-  } finally {
-    setState({ loading:false });
-  }
-}
-
-async function checkUserIsOwner(userEmail) {
-  try {
-    const token = await getToken();
-    const url = `https://graph.microsoft.com/v1.0/groups/${CONFIG.ownerGroupId}/owners`;
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await response.json();
-    const owners = data.value || [];
-
-    console.log('Owners:', owners.map(o => o.mail));
-    const isOwner = owners.some(o => o.mail?.toLowerCase() === userEmail.toLowerCase());
-    console.log('Is owner:', isOwner);
-
-    return isOwner;
-  } catch(e) {
-    console.warn('Owner check failed:', e.message);
-    return false;
-  }
-}
-
-async function loadTetelek(mlItemId) {
-  try {
-    const tetelek = await getItems(
-      SHAREPOINT.lists.munkalapTetelek,
-      `MunkalapId eq ${mlItemId}`
-    );
-
-    // Ha van már tétel, automatikusan állítsd be a munkatételt
-    if (tetelek.length > 0 && !S.selectedTetelId) {
-      const firstTetelId = tetelek[0].fields.T_x00e9_telk_x00f3_dId;
-      if (firstTetelId) {
-        setState({ tetelek, selectedTetelId: String(firstTetelId) });
-        return;
-      }
-    }
-
-    setState({ tetelek });
-  } catch(e) {
-    console.warn('Tételek hiba:', e.message);
-    setState({ tetelek:[] });
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ACTIONS
-══════════════════════════════════════════════════════════════ */
-async function doLogin() {
-  Object.keys(sessionStorage)
-    .filter(k => k.includes('interaction'))
-    .forEach(k => sessionStorage.removeItem(k));
-
-  try {
-    const r = await msalApp.loginRedirect({ scopes: getScopes() });
-    setState({ account:r?.account, screen:'app', error:null });
-    await loadAll();
-  } catch(e) {
-    if (e.errorCode === 'interaction_in_progress') {
-      Object.keys(sessionStorage)
-        .filter(k => k.startsWith('msal'))
-        .forEach(k => sessionStorage.removeItem(k));
-      setState({ error:'Kérjük, kattints újra a bejelentkezés gombra.' });
-    } else {
-      setState({ error:`Bejelentkezési hiba: ${e.message}` });
-    }
-  }
-}
-
-function doLogout() {
-  msalApp.logout();
-  setState({ account:null, screen:'login', munkalapok:[], munkaelemek:[], anyagok:[], tetelek:[], selectedML:null });
-}
-
-async function selectML(item) {
-  setState({ selectedML:item, view:'rogzites', tetelek:[], selectedTetelId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }], editId:null, error:null, success:null });
-  await loadTetelek(item.id);
-  setTimeout(() => document.getElementById('f-tetel')?.focus(), 0);
-}
-
-async function doSave() {
-  syncForm();
-  const { selectedML, anyagRows, selectedTetelId } = S;
-  if (!selectedML) return;
-  if (S.selectedML?.fields?.Zarva) {
-    setState({ error:'Ez a munkalap le van zárva, nem lehet új tételeket hozzáadni!' }); return;
-  }
-  if (!selectedTetelId) {
-    setState({ error:'Munkatételt kötelezően ki kell választani!' }); return;
-  }
-
-  // Validáció: legalább egy kitöltött sor kell
-  const validRows = anyagRows.filter(row => row.anyagId && row.mennyiseg && parseFloat(row.mennyiseg) > 0);
-  if (validRows.length === 0) {
-    setState({ error:'Legalább egy anyagtételt meg kell adni mennyiséggel!' }); return;
-  }
-
-  // Max mennyiség validáció
-  for (const row of validRows) {
-    const anyag = S.anyagok.find(a => String(a.id) === row.anyagId);
-    const maxVal = anyag?.fields?.max ?? anyag?.fields?.Max;
-    if (maxVal && parseFloat(row.mennyiseg) > parseFloat(maxVal)) {
-      setState({ error:`A megadott mennyiség (${row.mennyiseg}) meghaladja a megengedett maximumot (${maxVal}) a kiválasztott anyagnál!` }); return;
-    }
-  }
-
-  setState({ saving:true, error:null });
-  try {
-    // Minden érvényes sort mentünk
-    for (const row of validRows) {
-      const fields = {
-        MunkalapId:        parseInt(selectedML.id),
-        T_x00e9_telk_x00f3_dId: parseInt(selectedTetelId),
-        Anyagk_x00f3_dId:  parseInt(row.anyagId),
-        Mennyis_x00e9_g:   parseFloat(row.mennyiseg),
-        Megjegyz_x00e9_s:  row.megjegyzes || ''
-      };
-      await createItem(SHAREPOINT.lists.munkalapTetelek, fields);
-    }
-
-    await loadTetelek(selectedML.id);
-    setState({ success: `${validRows.length} tétel sikeresen rögzítve ✓`,
-               anyagRows: [{ anyagId:'', mennyiseg:'', megjegyzes:'' }] });
-    setTimeout(() => setState({ success:null }), 4000);
-  } catch(e) {
-    setState({ error:`Mentési hiba: ${e.message}` });
-  } finally {
-    setState({ saving:false });
-  }
-}
-
-async function doDelete(itemId) {
-  if (!confirm('Biztosan törlöd ezt a tételt?')) return;
-  try {
-    await deleteItem(SHAREPOINT.lists.munkalapTetelek, itemId);
-    await loadTetelek(S.selectedML.id);
-    setState({ success:'Tétel törölve.' });
-    setTimeout(() => setState({ success:null }), 3000);
-  } catch(e) {
-    setState({ error:`Törlési hiba: ${e.message}` });
-  }
-}
-
-async function doCloseMunkalap() {
-  if (!S.selectedML) return;
-  if (!confirm('Biztosan lezárod ezt a munkalapot? Ezután nem lehet hozzá anyagot felvenni.')) return;
-  try {
-    setState({ saving: true, error: null });
-    await updateItem(SHAREPOINT.lists.munkalapok, S.selectedML.id, { Zarva: true });
-    await loadAll();
-    setState({ selectedML: null, view: 'munkalapok', success: 'Munkalap lezárva ✓' });
-    setTimeout(() => setState({ success: null }), 3000);
-  } catch(e) {
-    setState({ error: `Lezárási hiba: ${e.message}` });
-  } finally {
-    setState({ saving: false });
-  }
-}
-
-function addAnyagRow() {
-  S.anyagRows.push({ anyagId: '', mennyiseg: '', megjegyzes: '' });
-  render();
-  const newIndex = S.anyagRows.length - 1;
-  setTimeout(() => {
-    document.getElementById(`f-anyag-${newIndex}`)?.focus();
-  }, 0);
-}
-
-function removeAnyagRow(index) {
-  if (S.anyagRows.length > 1) {
-    S.anyagRows.splice(index, 1);
-    render();
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   UTILS
-══════════════════════════════════════════════════════════════ */
-const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const fmtDate = d => d ? new Date(d).toLocaleDateString('hu-HU') : '–';
-const fmtNum = n => n != null ? Number(n).toLocaleString('hu-HU') : '–';
-
-function getSortIcon(col) {
-  if (S.sortBy !== col) return '';
-  return S.sortDir === 'asc' ? ' ↑' : ' ↓';
-}
-
-function sortMunkalapok(items) {
-  if (!S.sortBy) return items;
-  return [...items].sort((a, b) => {
-    const getVal = (item) => {
-      if (S.sortBy === 'cim') {
-        const cimA = [item.fields.field_4,item.fields.field_5,item.fields.field_6,item.fields.field_7].filter(Boolean).join(' ');
-        const cimB = [b.fields.field_4,b.fields.field_5,b.fields.field_6,b.fields.field_7].filter(Boolean).join(' ');
-        return cimA.toLowerCase();
-      }
-      if (S.sortBy === 'Munkalap') return String(item.fields.Munkalap||'').toLowerCase();
-      const val = item.fields[S.sortBy];
-      if (typeof val === 'number') return val;
-      if (typeof val === 'string') return val.toLowerCase();
-      if (val instanceof Date) return val.getTime();
-      return String(val||'').toLowerCase();
-    };
-    const aVal = getVal(a);
-    const bVal = getVal(b);
-    if (aVal < bVal) return S.sortDir === 'asc' ? -1 : 1;
-    if (aVal > bVal) return S.sortDir === 'asc' ? 1 : -1;
-    return 0;
-  });
-}
-
-function syncForm() {
-  S.anyagRows.forEach((row, index) => {
-    row.anyagId = document.getElementById(`f-anyag-${index}`)?.value || '';
-    row.mennyiseg = document.getElementById(`f-menny-${index}`)?.value || '';
-    row.megjegyzes = document.getElementById(`f-megj-${index}`)?.value || '';
-  });
-  S.selectedTetelId = document.getElementById('f-tetel')?.value || '';
-}
-
-function getAnyagLabel(id) {
-  if (!id) return '–';
-  const a = S.anyagok.find(x => String(x.id)===String(id));
-  if (!a) return `(ID:${id})`;
-  const f = a.fields;
-  const name = f.field_1 || f.Megnevezes || f.Anyag_neve || f.Nev || f.Leiras || '';
-  return name ? esc(name) : esc(f.Title||id);
-}
-
-function getTetelLabel(id) {
-  if (!id) return '–';
-  const t = S.munkaelemek.find(x => String(x.id)===String(id));
-  if (!t) return `(ID:${id})`;
-  const f = t.fields;
-  const name = f.Tetel_neve || f.Title || '';
-  return name ? esc(name) : esc(f.Tekod || id);
-}
-
-function getSelectedTetel() {
-  if (!S.selectedTetelId) return null;
-  return S.munkaelemek.find(m => String(m.id) === S.selectedTetelId);
-}
-
-function getSelectedAnyag() {
-  if (!S.form.anyagId) return null;
-  return S.anyagok.find(a => String(a.id) === S.form.anyagId);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════════════════════════ */
-function render() {
-  const root = document.getElementById('app');
-  if      (S.screen==='login')  root.innerHTML = renderLogin();
-  else                          root.innerHTML = renderApp();
-  bind();
-}
-
-function renderLogin() {
-  return `
-  <div class="login-wrap">
-    <div class="login-card">
-      ${logo(56)}
-      <h1 style="margin-top:16px">Vidanet</h1>
-      <h2>Anyagrögzítő rendszer</h2>
-      <p>Kivitelezői anyagfelhasználás rögzítése<br>munkalapok alapján</p>
-      ${S.error ? `<div class="alert alert-err" style="text-align:left">${esc(S.error)}</div>` : ''}
-      <button class="btn-ms" id="btn-login">
-        <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
-          <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
-          <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
-          <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
-          <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
-        </svg>
-        Bejelentkezés Microsoft-fiókkal
-      </button>
-      <p class="hint">Vidanet Microsoft 365 fiók szükséges</p>
-    </div>
-  </div>`;
-}
-
-function renderApp() {
-  const { view, munkalapok, loading, search, kivFilter, selectedML, tetelek, account } = S;
-
-  const kivs = [...new Set(munkalapok.map(m=>m.fields.field_8).filter(Boolean))].sort();
-
-  // Szerver oldali szűrés után csak szöveg és kivitelező szűrés marad
-  const filtered = munkalapok.filter(m => {
-    const f = m.fields;
-    const q = search.toLowerCase();
-    if (q && ![f.field_1,f.field_2,f.field_3,f.field_5,f.field_8,f.Munkalap].some(v =>
-      String(v||'').toLowerCase().includes(q))) return false;
-    if (kivFilter && f.field_8 !== kivFilter) return false;
-    return true;
-  });
-
-  console.log('Megjelenített munkalapok:', filtered.length, '/', munkalapok.length);
-
-    return `
-  <div class="layout">
-    <nav class="sidebar">
-      <div class="sb-head">
-        <div class="sb-brand">${logo(30)} <span class="sb-brand-name">Anyagrögzítő</span></div>
-        <div class="sb-user">Bejelentkezve:<strong>${esc(S.account?.name||S.account?.username||'')}</strong></div>
-      </div>
-      <div class="sb-section">
-        <div class="sb-label">Nézetek</div>
-        <button class="sb-item${view==='munkalapok'?' active':''}" data-nav="munkalapok">
-          ${ico('list')} Munkalapok
-          <span class="badge-cnt" style="margin-left:auto">${filtered.length}</span>
-        </button>
-        ${selectedML ? `
-        <button class="sb-item${view==='rogzites'?' active':''}" data-nav="rogzites">
-          ${ico('pencil')} Anyagfelvitel
-          <span class="badge-cnt" style="margin-left:auto">${tetelek.length}</span>
-        </button>` : ''}
-
-        <div class="sb-label" style="margin-top:16px">Összesítők</div>
-        <div style="padding:8px 10px;font-size:12px;color:#6b7280;line-height:2">
-          📋 ${munkalapok.length} munkalap betöltve<br>
-          🔧 ${S.munkaelemek.length} munkatétel típus<br>
-          📦 ${S.anyagok.length} anyag törzs
-        </div>
-      </div>
-      <div class="sb-filters">
-        <input type="text" id="inp-search" placeholder="🔍 Keresés..." value="${esc(search)}">
-        <select id="sel-kiv">
-          <option value="">Minden kivitelező</option>
-          ${kivs.map(k=>`<option value="${esc(k)}"${k===kivFilter?' selected':''}>${esc(k)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="sb-footer">
-        <button class="sb-logout" id="btn-logout">⏻  Kijelentkezés</button>
-      </div>
-    </nav>
-
-    <main class="main">
-      <div class="main-inner">
-        ${view==='munkalapok' ? renderMLList(filtered, loading) : renderRogzites()}
-      </div>
-    </main>
-  </div>`;
-}
-
-function renderMLList(items, loading) {
-  const sorted = sortMunkalapok(items);
-  return `
-  <div class="page-title">Munkalapok</div>
-  <p class="page-sub">${sorted.length} munkalap • kattints a megnyitáshoz</p>
-  ${renderAlerts()}
-  <div class="card">
-    ${loading ? `<div class="loading"><div class="spin"></div> Betöltés...</div>` : ''}
-    ${!loading && sorted.length===0 ? `<div class="empty">${ico('empty')}<p>Nincs találat a szűrőkre</p></div>` : ''}
-    ${!loading && sorted.length>0 ? `
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr>
-          <th data-sort="Munkalap" style="color:#9ca3af">Munkalap típus${getSortIcon('Munkalap')}</th>
-          <th data-sort="field_1">Munkalapszám${getSortIcon('field_1')}</th>
-          <th data-sort="field_2">Előf. azon.${getSortIcon('field_2')}</th>
-          <th data-sort="field_3">Ügyfél neve${getSortIcon('field_3')}</th>
-          <th data-sort="cim">Cím${getSortIcon('cim')}</th>
-          <th data-sort="field_8">Kivitelező${getSortIcon('field_8')}</th>
-          <th data-sort="field_9">Kiadás${getSortIcon('field_9')}</th>
-          <th data-sort="field_10">Munkavégzés${getSortIcon('field_10')}</th>
-        </tr></thead>
-        <tbody>
-          ${sorted.map(m => {
-            const f = m.fields;
-            const sel = S.selectedML?.id===m.id;
-            const cim = [f.field_4,f.field_5,f.field_6,f.field_7].filter(Boolean).join(' ');
-            return `
-            <tr class="ml-row${sel?' active':''}" data-ml-id="${esc(m.id)}">
-              <td><span class="ml-type">${esc(f.Munkalap||'–')}</span></td>
-              <td><span class="ml-num">${f.field_1||'–'}</span></td>
-              <td class="ml-meta">${f.field_2||'–'}</td>
-              <td><span class="ml-name">${esc(f.field_3||'–')}</span></td>
-              <td class="ml-meta">${esc(cim||'–')}</td>
-              <td class="ml-meta">${esc(f.field_8||'–')}</td>
-              <td class="ml-meta">${fmtDate(f.field_9)}</td>
-              <td class="ml-meta">${fmtDate(f.field_10)}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>` : ''}
-  </div>`;
-}
-
-function renderRogzites() {
-  const ml = S.selectedML;
-  if (!ml) return `<div class="empty"><p>Nincs kiválasztott munkalap</p></div>`;
-  const f = ml.fields;
-  const cim = [f.field_4,f.field_5,f.field_6,f.field_7].filter(Boolean).join(' ');
-
-  const tetelCount = S.tetelek.length;
-  const anyagFajtak = new Set(S.tetelek.map(t=>t.fields.Anyagk_x00f3_dId).filter(Boolean)).size;
-  const osszmenny   = S.tetelek.reduce((s,t)=>s+(t.fields.Mennyis_x00e9_g||0),0);
-
-  const selectedTetel = getSelectedTetel();
-  const selectedTetelName = selectedTetel?.fields?.Tetel_neve || selectedTetel?.fields?.Title || '–';
-  const selectedTetelEgyseg = selectedTetel?.fields?.Egyseg || '–';
-
-  const meOpts = S.munkaelemek.map(m => {
-    const mf = m.fields;
-    const kod = mf.Tekod || '';
-    const name = mf.Tetel_neve || mf.Title || '';
-    const label = kod && name ? `${kod} – ${name}` : (kod || name || '');
-    return `<option value="${esc(m.id)}"${String(m.id)===S.selectedTetelId?' selected':''}>${esc(label)}</option>`;
-  }).join('');
-
-  return `
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-    <button class="btn btn-outline btn-sm" data-nav="munkalapok">← Vissza</button>
-    <div>
-      <div class="page-title">Anyagfelvitel</div>
-      <p class="page-sub">Munkalap #${fmtNum(f.field_1)} · ${esc(f.field_3||'')} · ${esc(f.field_8||'')}</p>
-    </div>
-    <button class="btn btn-outline btn-sm" id="btn-refresh" style="margin-left:auto">⟳ Frissítés</button>
-    <button class="btn btn-outline btn-sm" onclick="window.open('https://secure.vidanet.hu/ecoweb/secure/mlap/admin.aspx?ID=${f.field_1}','_blank')">🔗 EcoWeb</button>
-  </div>
-
-  <div class="ml-header">
-    <div class="ml-field hl"><label>Munkalapszám</label><span class="ml-type">${f.field_1||'–'}</span></div>
-    <div class="ml-field"><label>Munkalap típusa</label><span class="ml-type">${esc(f.Munkalap||'–')}</span></div>
-    <div class="ml-field"><label>Kivitelező</label><span>${esc(f.field_8||'–')}</span></div>
-    <div class="ml-field"><label>Ügyfél neve</label><span>${esc(f.field_3||'–')}</span></div>
-    <div class="ml-field"><label>Cím</label><span>${esc(cim||'–')}</span></div>
-    <div class="ml-field"><label>Munkavégzés dátuma</label><span>${fmtDate(f.field_10)}</span></div>
-  </div>
-
-
-  <div class="card">
-    <div class="card-head">
-      <h3>📋 Munkatétel kiválasztása</h3>
-      ${S.selectedTetelId ? `<button class="btn btn-outline btn-sm" id="btn-reset-tetel">↻ Alaphelyzetbe</button>` : ''}
-    </div>
-    <div class="card-body">
-      <div class="form-grid">
-        <div class="f-group full">
-          <label class="f-label">Munkatétel</label>
-          <select class="f-ctrl" id="f-tetel" ${S.selectedTetelId || S.selectedML?.fields?.Zarva ? 'disabled' : ''}>
-            <option value="">– Válassz munkatételt –</option>
-            ${meOpts}
-          </select>
-        </div>
-      </div>
-      ${S.selectedTetelId ? `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:7px;border-left:3px solid #16a34a">
-        <strong style="color:#15803d">✓ Kiválasztott munkatétel:</strong> ${esc(selectedTetelName)}
-      </div>` : ''}
+<!-- ── Login screen ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ8AAABQCAYAAAFwh8A+AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUY0NUQ5RUYwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUY0NUQ5RjAwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RjQ1RDlFRDBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RjQ1RDlFRTBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgPvEkcAABt6SURBVHja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" id="logo-login" alt="Vidanet" class="logo">
+    <h1>Anyagrögzítő</h1>
+    <p class="sub">Jelentkezzen be Microsoft-fiókjával a folytatáshoz</p>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-login" id="btnLogin" onclick="login()">
+      <i class="ti ti-brand-windows"></i>
+      Bejelentkezés
+    </button>
+    <div class="login-footer">
+      Csak Vidanet-es Azure AD fiókkal érhető el
     </div>
   </div>
+</div>
 
-  ${renderAlerts()}
+<!-- ── Notification ── -->
+<div id="notif" style="position:fixed;top:60px;right:24px;z-index:9998;max-width:400px"></div>
 
-  <div class="card">
-    <div class="card-head">
-      <h3>${S.editId ? '✏️ Anyagtétel szerkesztése' : '➕ Anyagtételek rögzítése'}</h3>
-      ${S.editId ? `<button class="btn btn-outline btn-sm" id="btn-cancel">Mégsem</button>` : ''}
+<!-- ── VIEW: Munkalap lista ── -->
+<div class="app-shell" id="view-list">
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ8AAABQCAYAAAFwh8A+AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUY0NUQ5RUYwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUY0NUQ5RjAwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RjQ1RDlFRDBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RjQ1RDlFRTBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgPvEkcAABt6SURBVHja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" id="logo-tb" alt="Vidanet" class="brand-logo-img">
+      <div class="brand-col">
+        <span class="topbar-user" id="topbar-user">…</span>
+      </div>
+      <div class="topbar-divider"></div>
+      <span class="topbar-title">Munkalapok</span>
     </div>
-    <div class="card-body">
-      ${!S.selectedTetelId ? `<div class="alert alert-err">⚠️ Előbb válassz munkatételt a fenti szekcióban!</div>` : ''}
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="logout()" style="padding:5px 10px;font-size:12px;color:var(--txt2);cursor:pointer"><i class="ti ti-logout"></i> Kijelentkezés</button>
+    </div>
+  </header>
 
-      ${S.anyagRows.map((row, index) => `
-        <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;background:#fafafa">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <strong style="color:#1f2937">Anyagtétel #${index + 1}</strong>
-            ${S.anyagRows.length > 1 ? `<button class="btn-ghost" data-remove-row="${index}" title="Sor törlése">🗑</button>` : ''}
-          </div>
-          <div class="form-grid">
-            <div class="f-group">
-              <label class="f-label">Anyagkód <span class="req">*</span></label>
-              <select class="f-ctrl" id="f-anyag-${index}" ${!S.selectedTetelId || S.selectedML?.fields?.Zarva ? 'disabled' : ''}>
-                <option value="">– Válassz anyagot –</option>
-                ${(() => {
-                  const masSorbanKivalasztva = new Set();
-                  S.anyagRows.forEach((r, i) => {
-                    if (i !== index && r.anyagId) masSorbanKivalasztva.add(String(r.anyagId));
-                  });
-                  S.tetelek.forEach(t => {
-                    const rid = t.fields.Anyagk_x00f3_dId;
-                    if (rid) masSorbanKivalasztva.add(String(rid));
-                  });
-                  return S.anyagok
-                    .filter(a => !masSorbanKivalasztva.has(String(a.id)) || String(a.id) === row.anyagId)
-                    .map(a => {
-                      const af = a.fields;
-                      const kod = af.Title || '';
-                      const name = af.field_1 || '';
-                      const label = kod && name ? `${kod} – ${name}` : (kod || name || '');
-                      return `<option value="${esc(a.id)}"${String(a.id)===row.anyagId?' selected':''}>${esc(label)}</option>`;
-                    }).join('');
-                })()}
-              </select>
-            </div>
-            <div class="f-group">
-              <label class="f-label">Mennyiség <span class="req">*</span></label>
-              <div style="display:flex;gap:8px">
-                <input type="number" class="f-ctrl" id="f-menny-${index}" style="flex:1"
-                  value="${esc(row.mennyiseg)}" min="0.01" step="0.01" placeholder="pl. 10" ${!S.selectedTetelId || S.selectedML?.fields?.Zarva ? 'disabled' : ''}>
-                <div style="display:flex;align-items:center;padding:9px 12px;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:7px;white-space:nowrap;font-weight:500;color:#1f2937;min-width:80px;justify-content:center">
-                  ${row.anyagId ? esc(S.anyagok.find(a => String(a.id) === row.anyagId)?.fields?.Egys_x00e9_g || '–') : '–'}
-                </div>
-              </div>
-              ${(() => {
-                const anyag = row.anyagId ? S.anyagok.find(a => String(a.id) === row.anyagId) : null;
-                const maxVal = anyag?.fields?.max ?? anyag?.fields?.Max;
-                return maxVal ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px">Max: ${esc(String(maxVal))}</div>` : '';
-              })()}
-            </div>
-            <div class="f-group full">
-              <label class="f-label">Megjegyzés</label>
-              <input type="text" class="f-ctrl" id="f-megj-${index}"
-                value="${esc(row.megjegyzes)}" placeholder="Opcionális megjegyzés" maxlength="255" ${!S.selectedTetelId || S.selectedML?.fields?.Zarva ? 'disabled' : ''}>
-            </div>
-          </div>
-        </div>
-      `).join('')}
+  <main class="main">
 
-      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-outline" id="btn-add-row" ${!S.selectedTetelId || S.selectedML?.fields?.Zarva ? 'disabled' : ''}>
-          ➕ Új anyagtétel sor
-        </button>
-        <button class="btn btn-primary" id="btn-save" ${S.saving || !S.selectedTetelId || S.selectedML?.fields?.Zarva ? 'disabled' : ''}>
-          ${S.saving ? `<span class="spin"></span>` : ''}
-          Összes tétel mentése
-        </button>
+    <div class="page-hdr">
+      <div>
+        <h1><i class="ti ti-file-spreadsheet"></i>Munkalapok</h1>
+        <div class="sub">SharePoint listából betöltve</div>
+      </div>
+      <div class="page-hdr-right">
+        <button class="btn btn-secondary" onclick="loadData()"><i class="ti ti-refresh"></i>Frissítés</button>
       </div>
     </div>
-  </div>
 
-  ${S.tetelek.length > 0 && S.selectedTetelId ? (() => {
-    const tf0 = S.tetelek[0].fields;
-    const tetelDisp = tf0['T_x00e9_telk_x00f3_d'] || getTetelLabel(tf0.T_x00e9_telk_x00f3_dId);
-    return `<div class="card">
-      <div class="card-head" style="border-left-color:#16a34a">
-        <h3>📌 Kiválasztott munkatétel</h3>
-      </div>
-      <div class="card-body" style="font-size:14px;font-weight:600;color:#1f2937">
-        ${esc(tetelDisp)}
-      </div>
-    </div>`;
-  })() : ''}
-
-  <div class="card">
-    <div class="card-head" style="border-left-color:#78297d">
-      <h3>Rögzített tételek</h3>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="badge badge-cnt">${S.tetelek.length} db</span>
-        ${!S.selectedML?.fields?.Zarva ? `<button class="btn btn-danger btn-sm" id="btn-close-ml" ${S.saving ? 'disabled' : ''}>🔒 Lezárás</button>` : '<span class="badge" style="background:#fef2f2;color:#dc2626">🔒 Lezárva</span>'}
-      </div>
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-item">Összes: <strong id="st-total">0</strong></div>
+      <div class="stat-item">Hibajavítás: <strong id="st-hibajav">0</strong></div>
+      <div class="stat-item">Létesítés: <strong id="st-letesit">0</strong></div>
+      <div class="stat-item">Belső: <strong id="st-belso">0</strong></div>
+      <div class="stat-item">Készre jelentve: <strong id="st-kesz">0</strong></div>
     </div>
-    ${S.tetelek.length===0
-      ? `<div class="empty">${ico('empty')}<p>Még nincsenek rögzített anyagtételek ehhez a munkalaphoz</p></div>`
-      : `<div class="tbl-wrap">
+
+    <div class="srch-bar">
+      <div class="srch-wrap">
+        <i class="ti ti-search search-ico"></i>
+        <input type="text" id="srch" placeholder="Keresés munkalapszám, előfizető vagy cím alapján…" oninput="filterTable()">
+      </div>
+      <select id="filter-type" onchange="filterTable()">
+        <option value="">Mindegyik típus</option>
+        <option value="hibajav">Hibajavítás</option>
+        <option value="letesit">Létesítés</option>
+        <option value="belso">Belső</option>
+      </select>
+      <select id="filter-status" onchange="filterTable()">
+        <option value="">Minden állapot</option>
+        <option value="kesz">Kész</option>
+        <option value="folyamatban">Folyamatban</option>
+        <option value="uj">Új</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="tbl-wrap">
         <table>
-          <thead><tr>
-            <th>#</th><th>Anyag</th>
-            <th>Mennyiség</th><th>Egység</th><th>Megjegy.</th><th>Törlés</th>
-          </tr></thead>
-          <tbody>
-            ${S.tetelek.map((t,i) => {
-              const tf = t.fields;
-              const anyagDisp = tf['Anyagk_x00f3_d']       || getAnyagLabel(tf.Anyagk_x00f3_dId);
-              const anyagId = tf.Anyagk_x00f3_dId || tf['Anyagk_x00f3_d']?.Id;
-              let egyseg = tf['Anyagk_x00f3_d_Egys_x00e9_g'] || tf.Egys_x00e9_g;
-              if (!egyseg && anyagId) {
-                const anyag = S.anyagok.find(a => String(a.id) === String(anyagId));
-                egyseg = anyag?.fields?.Egys_x00e9_g || anyag?.fields?.Egység || anyag?.fields?.Egyseg || '–';
-              }
-              return `
-              <tr>
-                <td class="ml-meta">${i+1}</td>
-                <td>${anyagDisp}</td>
-                <td><strong>${fmtNum(tf.Mennyis_x00e9_g)}</strong></td>
-                <td class="ml-meta">${esc(egyseg)}</td>
-                <td class="ml-meta">${esc(tf.Megjegyz_x00e9_s||'–')}</td>
-                <td>
-                  <div class="act-cell">
-                    <button class="btn-ghost" data-del="${esc(t.id)}" title="Törlés" ${S.selectedML?.fields?.Zarva ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}>🗑</button>
-                  </div>
-                </td>
-              </tr>`;
-            }).join('')}
+          <thead>
+            <tr>
+              <th></th>
+              <th>Munkalap típusa</th>
+              <th>Munkalap száma</th>
+              <th>Előfizető neve</th>
+              <th>Címe</th>
+              <th>Irányítószám</th>
+              <th>Munkalap dátuma</th>
+              <th>Készrejelentés dátuma</th>
+              <th>Állapot</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr id="loading-row">
+              <td colspan="9">
+                <div class="empty-s"><div class="spinner" style="margin:0 auto 12px"></div>Munkalapok betöltése…</div>
+              </td>
+            </tr>
           </tbody>
         </table>
-      </div>`
-    }
-  </div>`;
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── VIEW: Anyagrögzítő szerkesztő ── -->
+<div class="app-shell" id="view-editor" style="display:none">
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ8AAABQCAYAAAFwh8A+AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUY0NUQ5RUYwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUY0NUQ5RjAwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RjQ1RDlFRDBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RjQ1RDlFRTBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgPvEkcAABt6SURBVHja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" id="logo-tb" alt="Vidanet" class="brand-logo-img">
+      <div class="brand-col">
+        <span class="topbar-user" id="topbar-user-ed">…</span>
+      </div>
+      <div class="topbar-divider"></div>
+      <span class="topbar-title">Anyagrögzítő</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="goBackToList()" style="padding:5px 10px;font-size:12px;color:var(--txt2);cursor:pointer"><i class="ti ti-arrow-left"></i> Vissza</button>
+      <button class="btn btn-ghost" onclick="refreshEditor()" style="padding:5px 10px;font-size:12px;color:var(--txt2);cursor:pointer"><i class="ti ti-refresh"></i> Frissítés</button>
+      <button class="btn btn-ghost" onclick="logout()" style="padding:5px 10px;font-size:12px;color:var(--txt2);cursor:pointer"><i class="ti ti-logout"></i> Kijelentkezés</button>
+      <span class="mono-sm" id="hdr-date">2026-06-13</span>
+    </div>
+  </header>
+
+  <main class="main main-ed">
+
+    <!-- 1. Munkalap adatai -->
+    <div class="munkalap-card">
+      <div class="ml-accent-bar"></div>
+      <div class="ml-body">
+        <div class="step-hdr">
+          <div class="step-hdr-left">
+            <div class="step-num">1</div>
+            <div>
+              <div class="step-label">Munkalap adatai</div>
+              <div class="step-sub">Alap azonosítók és típus</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ml-grid">
+          <div class="ml-field">
+            <span class="ml-label">MUNKALAPSZÁM</span>
+            <span class="ml-value highlight" id="mnszam-display">ML-2026-001234</span>
+          </div>
+          <div class="ml-field">
+            <span class="ml-label">MUNKALAP TÍPUSA</span>
+            <span class="ml-value highlight" id="type-display">Hibajavítás</span>
+          </div>
+          <div class="ml-field">
+            <span class="ml-label">KIVITELEZŐ</span>
+            <span class="ml-value" id="tt-name">–</span>
+          </div>
+          <div class="ml-field">
+            <span class="ml-label">ÜGYFÉL NEVE</span>
+            <span class="ml-value" id="ugyfel-display">–</span>
+          </div>
+          <div class="ml-field">
+            <span class="ml-label">CÍM</span>
+            <span class="ml-value" id="helyszin">–</span>
+          </div>
+          <div class="ml-field">
+            <span class="ml-label">MUNKAVÉGZÉS DÁTUMA</span>
+            <span class="ml-value" id="datum-display">2026-06-13</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Technológia és elhelyezés -->
+    <div class="card-pad">
+      <div class="step-hdr">
+        <div class="step-hdr-left">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-label">Szűrési feltételek</div>
+            <div class="step-sub">Technológia és elhelyezés</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="sec-lbl">Technológia</div>
+          <div class="pill-group" id="tech-g">
+            <button class="pill active-warn" data-tech="hfc" onclick="setFilter(this,'tech')"><i class="ti ti-wave-sine"></i>HFC</button>
+            <button class="pill" data-tech="gpon" onclick="setFilter(this,'tech')"><i class="ti ti-bolt"></i>GPON</button>
+          </div>
+        </div>
+        <div>
+          <div class="sec-lbl">Elhelyezés</div>
+          <div class="pill-group" id="place-g">
+            <button class="pill" data-pl="fold" onclick="setFilter(this,'place')"><i class="ti ti-layers-subtract"></i>Földalatti</button>
+            <button class="pill active-purple" data-pl="leges" onclick="setFilter(this,'place')"><i class="ti ti-cloud"></i>Légkábeles</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span class="filter-chip" id="fsum"><i class="ti ti-filter"></i> HFC · Légkábeles – anyaglista szűrve</span>
+      </div>
+    </div>
+
+    <!-- 3. Anyag hozzáadása -->
+    <div class="card-pad">
+      <div class="step-hdr">
+        <div class="step-hdr-left">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-label">Anyag hozzáadása</div>
+            <div class="step-sub">Jelöld ki, adj meg mennyiséget, majd hozzáad</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-strip" id="cat-tabs" style="margin-bottom:0">
+        <button class="tab-btn ta" data-cat="munkatetel" onclick="setCat(this)">Munkatételek <span class="tcnt" id="cnt-munkatetel">–</span></button>
+        <button class="tab-btn" data-cat="kabel" onclick="setCat(this)">Kábelek <span class="tcnt" id="cnt-kabel">–</span></button>
+        <button class="tab-btn" data-cat="csatlakozo" onclick="setCat(this)">Csatlakozók <span class="tcnt" id="cnt-csatlakozo">–</span></button>
+        <button class="tab-btn" data-cat="passziv" onclick="setCat(this)">Passzív elemek <span class="tcnt" id="cnt-passziv">–</span></button>
+        <button class="tab-btn" data-cat="aktiv" onclick="setCat(this)">Aktív elemek <span class="tcnt" id="cnt-aktiv">–</span></button>
+      </div>
+
+      <div class="search-wrap">
+        <i class="ti ti-search search-ico"></i>
+        <input type="text" id="srch-ed" placeholder="Keresés megnevezés vagy cikkszám alapján…" oninput="renderList()">
+      </div>
+      <div class="mat-list" id="mat-list"></div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-primary" onclick="addSel()"><i class="ti ti-circle-plus" style="font-size:15px"></i>Hozzáad a listához</button>
+      </div>
+    </div>
+
+    <!-- 4. Felvett anyagok -->
+    <div class="card-pad">
+      <div class="step-hdr">
+        <div class="step-hdr-left">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-label">Felvett anyagok <span id="add-cnt" style="font-size:12px;font-weight:400;color:var(--txt3);margin-left:4px"></span></div>
+            <div class="step-sub">Áttekintés és mentés</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="added-wrap"></div>
+
+      <div class="bot-bar">
+        <span class="tot-info" id="tot-info">0 tétel</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="clearAll()"><i class="ti ti-trash" style="font-size:14px"></i>Törlés mind</button>
+          <button class="btn btn-secondary" onclick="saveMl()"><i class="ti ti-device-floppy" style="font-size:15px"></i>Tételek mentése</button>
+          <button class="btn btn-primary" onclick="saveAndClose()"><i class="ti ti-lock" style="font-size:14px"></i>Mentés és lezárás</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Close modal ── -->
+<div class="mod-cloak" id="close-modal">
+  <div class="mod-box">
+    <h3><i class="ti ti-alert-triangle"></i>Mentés és lezárás</h3>
+    <p>A mentés után a munkalaphoz már nem lehet újabb tételeket hozzáadni vagy a meglévőket módosítani.<br><br><strong>Biztosan lezárod a munkalapot?</strong></p>
+    <div class="mod-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Mégse</button>
+      <button class="btn btn-primary" onclick="confirmClose()"><i class="ti ti-lock" style="font-size:14px"></i>Lezárom</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Azure AD konfiguráció ────────────────────────────────────────────────────
+const AZURE_AD_CLIENT_ID = '9aad78c7-b2c6-4f08-9a77-29872311261f';
+const AZURE_AD_TENANT_ID  = 'e2c00272-db18-4cff-87a2-44d63edfa62b';
+const AZURE_AD_AUTHORITY  = 'https://login.microsoftonline.com/' + AZURE_AD_TENANT_ID;
+
+const LOGO_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ8AAABQCAYAAAFwh8A+AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUY0NUQ5RUYwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUY0NUQ5RjAwRkI1MTFFNzg5MjVCMkVCNjY0NDhCRTUiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RjQ1RDlFRDBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RjQ1RDlFRTBGQjUxMUU3ODkyNUIyRUI2NjQ0OEJFNSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgPvEkcAABt6SURBVHja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';
+
+const MSAL_CONFIG = {
+  auth: {
+    clientId: AZURE_AD_CLIENT_ID,
+    authority: AZURE_AD_AUTHORITY,
+    redirectUri: window.location.origin + window.location.pathname
+  },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+};
+
+let msalInstance = null;
+let msalAccount = null;
+
+try {
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+} catch (e) {
+  console.warn('MSAL init failed — running in demo mode', e);
 }
-
-function renderAlerts() {
-  return `
-    ${S.error   ? `<div class="alert alert-err">${ico('warn')} ${esc(S.error)}<button class="alert-close" id="cl-err">✕</button></div>` : ''}
-    ${S.success ? `<div class="alert alert-ok">${ico('check')} ${esc(S.success)}</div>` : ''}`;
-}
-
-function logo(size) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 48 48">
-    <rect width="48" height="48" rx="10" fill="#FF7600"/>
-    <text x="24" y="34" text-anchor="middle" font-family="Segoe UI,sans-serif"
-      font-weight="900" font-size="19" fill="white">VDN</text>
-  </svg>`;
-}
-
-function ico(name) {
-  const icons = {
-    list:  `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v2H3V4zm0 5h14v2H3V9zm0 5h10v2H3v-2z"/></svg>`,
-    pencil:`<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.6 2.4a2 2 0 012.8 2.8L5.8 15.8l-3.6.8.8-3.6L13.6 2.4z"/></svg>`,
-    empty: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`,
-    warn:  `⚠️`,
-    check: `✓`
-  };
-  return icons[name]||'';
-}
-
-/* ══════════════════════════════════════════════════════════════
-   EVENT BINDING
-══════════════════════════════════════════════════════════════ */
-function bind() {
-  const on = (id, ev, fn) => document.getElementById(id)?.addEventListener(ev, fn);
-  const all = (sel, fn) => document.querySelectorAll(sel).forEach(fn);
-
-  on('btn-login',       'click', doLogin);
-
-  on('btn-logout',   'click',  doLogout);
-  on('btn-refresh',  'click',  async () => { await loadAll(); if (S.selectedML) await loadTetelek(S.selectedML.id); });
-  on('btn-save',     'click',  doSave);
-  on('btn-add-row',  'click',  addAnyagRow);
-  on('btn-reset-tetel', 'click', () => setState({selectedTetelId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }]}));
-  on('btn-cancel',   'click',  () => setState({editId:null, anyagRows:[{ anyagId:'', mennyiseg:'', megjegyzes:'' }]}));
-  on('btn-close-ml', 'click',  doCloseMunkalap);
-  on('cl-err',       'click',  () => setState({error:null}));
-
-  all('[data-nav]',     el => el.addEventListener('click', () => setState({view:el.dataset.nav, error:null})));
-  all('th[data-sort]',   el => el.addEventListener('click', () => {
-    const col = el.dataset.sort;
-    let newDir = 'asc';
-    if (S.sortBy === col) {
-      newDir = S.sortDir === 'asc' ? 'desc' : 'asc';
-    }
-    setState({ sortBy: col, sortDir: newDir });
-  }));
-  all('.ml-row',        el => el.addEventListener('click', () => {
-    const item = S.munkalapok.find(m=>m.id===el.dataset.mlId);
-    if (item) selectML(item);
-  }));
-  all('[data-del]',     el => el.addEventListener('click', () => doDelete(el.dataset.del)));
-  all('[data-remove-row]', el => el.addEventListener('click', () => removeAnyagRow(parseInt(el.dataset.removeRow))));
-
-  on('inp-search', 'input', e => {
-    setState({search: e.target.value}, true);
-    const el = document.getElementById('inp-search');
-    el.value = e.target.value;
-    render();
-    const reFocused = document.getElementById('inp-search');
-    if (reFocused) {
-        reFocused.focus();
-        reFocused.selectionStart = reFocused.selectionEnd = reFocused.value.length;
-    }
-  });
-  on('sel-kiv',    'change', e => setState({kivFilter:e.target.value}));
-
-  // Dinamikus input mezők kezelése
-  S.anyagRows.forEach((row, index) => {
-    ['f-anyag','f-menny','f-megj'].forEach(prefix => {
-      const id = `${prefix}-${index}`;
-      document.getElementById(id)?.addEventListener('input', syncForm);
-    });
-
-    // Anyag selectnél change → render, majd fókusz a mennyiség mezőre
-    document.getElementById(`f-anyag-${index}`)?.addEventListener('change', () => {
-      syncForm();
-      render();
-      setTimeout(() => document.getElementById(`f-menny-${index}`)?.focus(), 0);
-    });
-  });
-
-  document.getElementById('f-tetel')?.addEventListener('change', e => {
-    setState({selectedTetelId: e.target.value});
-  });
-
-  document.getElementById('f-menny-0')?.addEventListener('keydown', e => {
-    if (e.key==='Enter') doSave();
-  });
-}
-
-/* ══════════════════════════════════════════════════════════════
-   INIT
-══════════════════════════════════════════════════════════════ */
-async function init() {
-  msalApp = buildMsal();
-  await msalApp.initialize();
+async function login() {
+  const btn = document.getElementById('btnLogin');
+  const errEl = document.getElementById('loginError');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="login-spinner"></span>';
+  errEl.className = 'login-error';
 
   try {
-    const resp = await msalApp.handleRedirectPromise();
-    if (resp?.account) {
-      setState({ account:resp.account, screen:'app' });
-      await loadAll();
+    if (!msalInstance) { throw new Error('MSAL nem inicializálható'); }
+    const resp = await msalInstance.loginPopup({
+      scopes: ['User.Read'],
+      prompt: 'select_account'
+    });
+    msalAccount = resp.account;
+    onLoginSuccess(msalAccount);
+  } catch (err) {
+    console.error('Login failed:', err);
+    if (err.errorCode === 'user_cancelled') {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-brand-windows"></i> Bejelentkezés';
       return;
     }
-  } catch(e) {
-    console.warn('Redirect:', e);
-  }
-
-  const accounts = msalApp.getAllAccounts();
-  if (accounts.length) {
-    setState({ account:accounts[0], screen:'app' });
-    await loadAll();
-  } else {
-    setState({ screen:'login' });
+    errEl.textContent = 'Sikertelen bejelentkezés: ' + (err.errorMessage || err.message || 'ismeretlen hiba');
+    errEl.className = 'login-error show';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-brand-windows"></i> Bejelentkezés';
   }
 }
 
-init();
+function onLoginSuccess(account) {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('view-list').style.display = '';
+  const name = account.name || account.username || 'Felhasználó';
+  document.getElementById('topbar-user').textContent = name;
+  document.getElementById('topbar-user-ed').textContent = name;
+  initApp();
+}
+
+function setLogos() {
+  var ids = ['logo-login','logo-tb'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.src = LOGO_DATA_URI;
+  });
+}
+
+function logout() {
+  if (msalInstance) msalInstance.logoutPopup();
+  msalAccount = null;
+  document.getElementById('view-list').style.display = 'none';
+  document.getElementById('view-editor').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginError').className = 'login-error';
+  showN('Sikeresen kijelentkeztél.', true);
+}
+
+// ── SSR ──
+async function handleRedirect() {
+  if (!msalInstance) { return false; }
+  try {
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp && resp.account) {
+      msalAccount = resp.account;
+      onLoginSuccess(msalAccount);
+      return true;
+    }
+  } catch (e) {
+    console.warn('handleRedirectPromise error:', e);
+  }
+  return false;
+}
+
+async function trySilentLogin() {
+  if (!msalInstance) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('topbar-user').textContent = 'Farkas Barnabás';
+    document.getElementById('topbar-user-ed').textContent = 'Farkas Barnabás';
+    initApp();
+    return;
+  }
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    msalAccount = accounts[0];
+    onLoginSuccess(msalAccount);
+    initApp();
+  }
+}
+
+// ── Notification ──
+let notifTimer = null;
+function showN(msg, warn) {
+  const el = document.getElementById('notif');
+  el.innerHTML = (warn ? '<i class="ti ti-alert-circle"></i>' : '<i class="ti ti-circle-check"></i>') + ' ' + msg;
+  el.style.background = warn ? 'var(--warn-bg)' : 'var(--success-bg)';
+  el.style.color = warn ? 'var(--warn-txt)' : 'var(--success-txt)';
+  el.style.borderColor = warn ? 'var(--warn-bd)' : 'var(--success-bd)';
+  el.className = 'show';
+  if (notifTimer) clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => { el.className = ''; el.style.display = 'none'; }, 3500);
+}
+
+// ── View switching ───────────────────────────────────────────────────────────
+function openMunkalap(id) {
+  document.getElementById('view-list').style.display = 'none';
+  const ed = document.getElementById('view-editor');
+  ed.style.display = '';
+  document.getElementById('mnszam-display').textContent = id;
+  document.title = 'Vidanet · ' + id + ' – Anyagrögzítő';
+  initEditor();
+  showN('✓ Munkalap ' + id + ' betöltve', false);
+}
+
+function goBackToList() {
+  document.getElementById('view-editor').style.display = 'none';
+  document.getElementById('view-list').style.display = '';
+  document.title = 'Vidanet · Munkalapok';
+  filterTable();
+}
+
+// ── SharePoint lista mintaadatok ─────────────────────────────────────────────
+const SP_MUNKALAPOK = [
+  { id: 'ML-2026-001234', tipus: 'hibajav', elofizeto: 'Tóth István', cim: 'Budapest XIV., Erzsébet királyné útja 52.', irsz: '1145', datum: '2026-06-10', keszDatum: '2026-06-13', allapot: 'kesz' },
+  { id: 'ML-2026-001235', tipus: 'letesit', elofizeto: 'Kovács és Társa Kft.', cim: 'Debrecen, Kassai út 129.', irsz: '4028', datum: '2026-06-11', keszDatum: '', allapot: 'folyamatban' },
+  { id: 'ML-2026-001236', tipus: 'hibajav', elofizeto: 'Szabó Mária', cim: 'Győr, Bartók Béla út 34.', irsz: '9025', datum: '2026-06-12', keszDatum: '', allapot: 'folyamatban' },
+  { id: 'ML-2026-001237', tipus: 'belso', elofizeto: 'Vidanet Zrt. – Hálózatüzemeltetés', cim: 'Budapest V., Váci út 45.', irsz: '1134', datum: '2026-06-09', keszDatum: '2026-06-11', allapot: 'kesz' },
+  { id: 'ML-2026-001238', tipus: 'letesit', elofizeto: 'Nagy Péter', cim: 'Szeged, Tisza Lajos körút 78.', irsz: '6722', datum: '2026-06-13', keszDatum: '', allapot: 'uj' },
+  { id: 'ML-2026-001239', tipus: 'hibajav', elofizeto: 'Molnár Bt.', cim: 'Pécs, Rákóczi út 15.', irsz: '7621', datum: '2026-06-08', keszDatum: '2026-06-12', allapot: 'kesz' },
+  { id: 'ML-2026-001240', tipus: 'letesit', elofizeto: 'Déli Hálózat Kft.', cim: 'Miskolc, Bajcsy-Zs. út 8.', irsz: '3525', datum: '2026-06-07', keszDatum: '2026-06-14', allapot: 'kesz' },
+  { id: 'ML-2026-001241', tipus: 'hibajav', elofizeto: 'Varga Ferenc', cim: 'Nyíregyháza, Dózsa György út 22.', irsz: '4400', datum: '2026-06-14', keszDatum: '', allapot: 'uj' },
+  { id: 'ML-2026-001242', tipus: 'belso', elofizeto: 'Vidanet Zrt. – Beruházás', cim: 'Budapest XIII., Váci út 78.', irsz: '1138', datum: '2026-06-06', keszDatum: '2026-06-10', allapot: 'kesz' },
+  { id: 'ML-2026-001243', tipus: 'letesit', elofizeto: 'Hegedűs Bt.', cim: 'Székesfehérvár, Budai út 55.', irsz: '8000', datum: '2026-06-05', keszDatum: '', allapot: 'folyamatban' },
+  { id: 'ML-2026-001244', tipus: 'hibajav', elofizeto: 'Balogh Károly', cim: 'Eger, Széchenyi út 12.', irsz: '3300', datum: '2026-06-04', keszDatum: '2026-06-09', allapot: 'kesz' },
+  { id: 'ML-2026-001245', tipus: 'letesit', elofizeto: 'Északi Média Kft.', cim: 'Salgótarján, Fő tér 3.', irsz: '3100', datum: '2026-06-03', keszDatum: '', allapot: 'folyamatban' },
+  { id: 'ML-2026-001246', tipus: 'hibajav', elofizeto: 'Kiss Andrea', cim: 'Sopron, Várkerület 67.', irsz: '9400', datum: '2026-06-02', keszDatum: '2026-06-07', allapot: 'kesz' },
+  { id: 'ML-2026-001247', tipus: 'belso', elofizeto: 'Vidanet Zrt. – Karbantartás', cim: 'Budapest XI., Budafoki út 28.', irsz: '1117', datum: '2026-06-01', keszDatum: '2026-06-06', allapot: 'kesz' },
+  { id: 'ML-2026-001248', tipus: 'letesit', elofizeto: 'Közép-Magyarországi Technika Kft.', cim: 'Budapest XVI., János utca 4.', irsz: '1165', datum: '2026-05-30', keszDatum: '2026-06-05', allapot: 'kesz' }
+];
+
+const TIPUS_LABEL = {
+  hibajav: '<span class="mbadge mbadge-hibajav">Hibajavítás</span>',
+  letesit: '<span class="mbadge mbadge-letesit">Létesítés</span>',
+  belso:   '<span class="mbadge mbadge-belso">Belső</span>'
+};
+
+const ALLAPOT_LABEL = {
+  kesz:       '<span class="status-dot kesz">Kész</span>',
+  folyamatban: '<span class="status-dot foly">Folyamatban</span>',
+  uj:         '<span class="status-dot uj">Új</span>'
+};
+
+// ── List render ──
+function renderTable(data) {
+  const tbody = document.getElementById('tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-s"><i class="ti ti-inbox"></i>Nincs megjeleníthető munkalap.</div></td></tr>';
+    updateStats([]);
+    return;
+  }
+  tbody.innerHTML = data.map(m => {
+    const keszDatum = m.keszDatum || '–';
+    return '<tr onclick="openMunkalap(\'' + m.id + '\')">'
+      + '<td><i class="ti ti-file-text" style="color:var(--txt3);font-size:16px"></i></td>'
+      + '<td>' + (TIPUS_LABEL[m.tipus] || m.tipus) + '</td>'
+      + '<td class="ml-szam">' + m.id + '</td>'
+      + '<td>' + m.elofizeto + '</td>'
+      + '<td>' + m.cim + '</td>'
+      + '<td>' + m.irsz + '</td>'
+      + '<td>' + m.datum + '</td>'
+      + '<td>' + keszDatum + '</td>'
+      + '<td>' + (ALLAPOT_LABEL[m.allapot] || m.allapot) + '</td>'
+      + '</tr>';
+  }).join('');
+  updateStats(data);
+}
+
+function updateStats(data) {
+  const total = data.length;
+  const hibajav = data.filter(m => m.tipus === 'hibajav').length;
+  const letesit = data.filter(m => m.tipus === 'letesit').length;
+  const belso = data.filter(m => m.tipus === 'belso').length;
+  const kesz = data.filter(m => m.allapot === 'kesz').length;
+  document.getElementById('st-total').textContent = total;
+  document.getElementById('st-hibajav').textContent = hibajav;
+  document.getElementById('st-letesit').textContent = letesit;
+  document.getElementById('st-belso').textContent = belso;
+  document.getElementById('st-kesz').textContent = kesz;
+}
+
+function filterTable() {
+  const q = document.getElementById('srch').value.toLowerCase().trim();
+  const typeFilter = document.getElementById('filter-type').value;
+  const statusFilter = document.getElementById('filter-status').value;
+  let filtered = SP_MUNKALAPOK;
+  if (q) {
+    filtered = filtered.filter(m =>
+      m.id.toLowerCase().includes(q) ||
+      m.elofizeto.toLowerCase().includes(q) ||
+      m.cim.toLowerCase().includes(q) ||
+      m.irsz.includes(q)
+    );
+  }
+  if (typeFilter) filtered = filtered.filter(m => m.tipus === typeFilter);
+  if (statusFilter) filtered = filtered.filter(m => m.allapot === statusFilter);
+  renderTable(filtered);
+}
+
+function loadData() {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '<tr><td colspan="9"><div class="empty-s"><div class="spinner" style="margin:0 auto 12px"></div>Munkalapok betöltése…</div></td></tr>';
+  setTimeout(() => {
+    filterTable();
+    showN('Munkalapok frissítve (' + SP_MUNKALAPOK.length + ' db)', false);
+  }, 400);
+}
+const M={
+hfc_fold_munkatetel:[
+  {c:'MT-FOLD-KABEL',n:'Földkábel fektetés',e:'m'},
+  {c:'MT-FOLD-KABEL-ELO',n:'Kábel előkészítés (végzés)',e:'db'},
+  {c:'MT-FOLD-KOTES',n:'Kábeltoldás / kötés',e:'db'},
+  {c:'MT-FOLD-MERES',n:'Vonalmérés',e:'db'},
+  {c:'MT-FOLD-NYOMV',n:'Nyomvonal felmérés',e:'óra'},
+  {c:'MT-FOLD-SZERELV',n:'Szerelvényezés (elágazás)',e:'db'},
+  {c:'MT-FOLD-HOMLOK',n:'Homlokzati bekötés',e:'db'},
+  {c:'MT-FOLD-EPKEZ',n:'Épületkezelői hozzájárulás',e:'db'},
+  {c:'MT-FOLD-KABELVEG',n:'Kábelvégek toldóhüvelyezése',e:'db'},
+],
+hfc_fold_kabel:[
+  {c:'HFC-QR540-JCA',n:'QR 540 JCA koaxiális kábel 5/8"',e:'m'},
+  {c:'HFC-QR628-JCA',n:'QR 628 JCA koaxiális kábel 3/4"',e:'m'},
+  {c:'HFC-QR860-JCA',n:'QR 860 JCA koaxiális kábel 1"',e:'m'},
+  {c:'HFC-QR1125-JCA',n:'QR 1125 JCA koaxiális kábel 1-1/4"',e:'m'},
+  {c:'FIB-SM9-4-JCA',n:'SM optikai kábel 4 szálas FV-buried',e:'m'},
+  {c:'FIB-SM9-8-JCA',n:'SM optikai kábel 8 szálas FV-buried',e:'m'},
+],
+hfc_fold_csatlakozo:[
+  {c:'CST-F-58-T',n:'F-csatlakozó 5/8" tömített csavar',e:'db'},
+  {c:'CST-F-34-T',n:'F-csatlakozó 3/4" tömített csavar',e:'db'},
+  {c:'CST-F-1-T',n:'F-csatlakozó 1" tömített csavar',e:'db'},
+  {c:'CST-KOAX-TOLD',n:'Koax toldó anya-anya tömített',e:'db'},
+  {c:'CST-75OHM-ZAR',n:'Végzáró 75 Ohm csavar típusú',e:'db'},
+  {c:'CST-NYOM-34',n:'Nyomókötő 3/4" ágvezető',e:'db'},
+],
+hfc_fold_passziv:[
+  {c:'PAS-HFC-EL2',n:'HFC elosztó kétutas beltéri',e:'db'},
+  {c:'PAS-HFC-EL4',n:'HFC elosztó négyutas beltéri',e:'db'},
+  {c:'PAS-HFC-TAP2',n:'HFC ágszedő kétutas 2-es tüske',e:'db'},
+  {c:'PAS-HFC-TAP4',n:'HFC ágszedő négyutas 4-es tüske',e:'db'},
+  {c:'PAS-CSILK-6',n:'Végcsillapító 6 dB F-csatlakozós',e:'db'},
+  {c:'PAS-CSILK-10',n:'Végcsillapító 10 dB F-csatlakozós',e:'db'},
+  {c:'PAS-CSILK-15',n:'Végcsillapító 15 dB F-csatlakozós',e:'db'},
+  {c:'PAS-HFC-TOLD',n:'Koax toldó alumínium ház tömített',e:'db'},
+],
+hfc_fold_aktiv:[
+  {c:'AKT-HFC-NODE',n:'HFC optikai node 1310nm beltéri',e:'db'},
+  {c:'AKT-HFC-AMP-1G',n:'HFC elosztó erősítő 1 GHz',e:'db'},
+  {c:'AKT-HFC-AMP-PDW',n:'HFC erősítő tápegységgel',e:'db'},
+  {c:'AKT-HFC-VISS',n:'Visszirányú erősítő modul',e:'db'},
+],
+hfc_leges_munkatetel:[
+  {c:'MT-LEG-KABEL',n:'Légkábel szerelés',e:'m'},
+  {c:'MT-LEG-TARTO',n:'Tartókötél szerelés / feszítés',e:'m'},
+  {c:'MT-LEG-KOTES',n:'Kábeltoldás léges környezetben',e:'db'},
+  {c:'MT-LEG-KOTELFOG',n:'Tartókötél befogó felszerelés',e:'db'},
+  {c:'MT-LEG-MERES',n:'Vonalmérés (irány + szint)',e:'db'},
+  {c:'MT-LEG-BEKOTES',n:'Bekötés oszlopról / tartóról',e:'db'},
+  {c:'MT-LEG-SZERELV',n:'Szerelvényezés léges hálózaton',e:'db'},
+  {c:'MT-LEG-NYOMV',n:'Nyomvonal felmérés (légvonal)',e:'óra'},
+  {c:'MT-LEG-KABELVEG',n:'Kábelvég előkészítés',e:'db'},
+],
+hfc_leges_kabel:[
+  {c:'HFC-QR540-LEG',n:'QR 540 léges koaxiális kábel tartókötéllel',e:'m'},
+  {c:'HFC-QR628-LEG',n:'QR 628 léges koaxiális kábel tartókötéllel',e:'m'},
+  {c:'FIB-SM9-8-ADSS',n:'SM ADSS optikai kábel 8 szálas léges',e:'m'},
+  {c:'FIB-SM9-12-ADSS',n:'SM ADSS optikai kábel 12 szálas léges',e:'m'},
+  {c:'ROG-TARTOKOT',n:'Acél tartókötél 7mm',e:'m'},
+],
+hfc_leges_csatlakozo:[
+  {c:'CST-F-58-L',n:'F-csatlakozó 5/8" léges tömített',e:'db'},
+  {c:'CST-F-34-L',n:'F-csatlakozó 3/4" léges tömített',e:'db'},
+  {c:'ROG-KOTELFOG',n:'Tartókötél befogó szorítókapocs',e:'db'},
+  {c:'ROG-VEGZAROHU',n:'Végzáró tartókötél-hurok',e:'db'},
+  {c:'ROG-KOTELKOT',n:'Tartókötél kötőelem kétoldalas',e:'db'},
+],
+hfc_leges_passziv:[
+  {c:'PAS-HFC-EL2-L',n:'HFC elosztó kétutas léges ház',e:'db'},
+  {c:'PAS-HFC-EL4-L',n:'HFC elosztó négyutas léges ház',e:'db'},
+  {c:'PAS-HFC-TAP2-L',n:'HFC ágszedő kétutas léges ház',e:'db'},
+  {c:'PAS-CSATL-LEG',n:'Léges koax toldó ház IP67',e:'db'},
+  {c:'ROG-KAPCSSZ',n:'Önzáró tartókapocs kábel rögzítő',e:'db'},
+  {c:'ROG-POLIAM-360',n:'Poliamid kötegelő szalag 360mm',e:'db'},
+],
+hfc_leges_aktiv:[
+  {c:'AKT-HFC-AMP-L',n:'HFC léges erősítő ház IP65',e:'db'},
+  {c:'AKT-HFC-NODE-L',n:'HFC optikai node léges ház',e:'db'},
+],
+gpon_fold_munkatetel:[
+  {c:'MT-GPO-FOLD-KABEL',n:'Optikai földkábel fektetés',e:'m'},
+  {c:'MT-GPO-FOLD-SPLIC',n:'Splicing / optikai toldás',e:'db'},
+  {c:'MT-GPO-FOLD-MERES',n:'OTDR mérés / csillapítás',e:'db'},
+  {c:'MT-GPO-FOLD-KOTES',n:'Kötés mikroduktban',e:'db'},
+  {c:'MT-GPO-FOLD-SPLIT',n:'Splitter beépítés',e:'db'},
+  {c:'MT-GPO-FOLD-HOMLOK',n:'Homlokzati optikai bekötés',e:'db'},
+  {c:'MT-GPO-FOLD-PATCH',n:'Patch panel rendezés',e:'db'},
+  {c:'MT-GPO-FOLD-NYOMV',n:'Nyomvonal felmérés',e:'óra'},
+],
+gpon_fold_kabel:[
+  {c:'GPO-SM9-12-JCA',n:'SM optikai kábel 12 szálas FV-buried',e:'m'},
+  {c:'GPO-SM9-24-JCA',n:'SM optikai kábel 24 szálas FV-buried',e:'m'},
+  {c:'GPO-SM9-48-JCA',n:'SM optikai kábel 48 szálas FV-buried',e:'m'},
+  {c:'MIK-DUCT-7',n:'Mikrodukt 7/5mm HDPE fúvó',e:'m'},
+  {c:'MIK-DUCT-10',n:'Mikrodukt 10/8mm HDPE fúvó',e:'m'},
+  {c:'GPO-PATCHC-SM',n:'SC/APC-SC/APC patch kábel 2m',e:'db'},
+],
+gpon_fold_csatlakozo:[
+  {c:'CST-SCAPC-FUS',n:'SC/APC csatlakozó fusion egyenes',e:'db'},
+  {c:'CST-SCAPC-ADP',n:'SC/APC adapter SM duplex',e:'db'},
+  {c:'CST-FIB-TOLD',n:'Optikai toldóhüvely fusion splicing',e:'db'},
+  {c:'CST-SCAPC-PREG',n:'SC/APC előszerelt csatlakozó',e:'db'},
+  {c:'CST-FIB-VKSAP',n:'Vakon zárósapka SC/APC',e:'db'},
+],
+gpon_fold_passziv:[
+  {c:'SPL-1X2-PLC',n:'1×2 PLC splitter SC/APC csatlakozós',e:'db'},
+  {c:'SPL-1X4-PLC',n:'1×4 PLC splitter SC/APC csatlakozós',e:'db'},
+  {c:'SPL-1X8-PLC',n:'1×8 PLC splitter SC/APC csatlakozós',e:'db'},
+  {c:'SPL-1X16-PLC',n:'1×16 PLC splitter SC/APC csatlakozós',e:'db'},
+  {c:'FDB-12-JCA',n:'Fiber elosztó doboz (FDB) 12 porthoz',e:'db'},
+  {c:'FDB-24-JCA',n:'Fiber elosztó doboz (FDB) 24 porthoz',e:'db'},
+  {c:'ODF-2U-RACK',n:'ODF tároló keret 2U rack szerelhető',e:'db'},
+],
+gpon_fold_aktiv:[
+  {c:'AKT-ONT-GPON1',n:'GPON ONT lakás 1GE+1FE+POTS',e:'db'},
+  {c:'AKT-ONT-GPON2',n:'GPON ONT üzleti 4GE+2POTS+WiFi6',e:'db'},
+  {c:'AKT-ONU-SFP',n:'ONU SFP+ modul GPON kültéri',e:'db'},
+  {c:'AKT-ROUTER-1G',n:'Router CPE GPON 1GE WAN',e:'db'},
+],
+gpon_leges_munkatetel:[
+  {c:'MT-GPO-LEG-KABEL',n:'ADSS / Figure-8 léges kábelszerelés',e:'m'},
+  {c:'MT-GPO-LEG-SPLIC',n:'Splicing léges környezetben',e:'db'},
+  {c:'MT-GPO-LEG-MERES',n:'OTDR mérés léges szakaszon',e:'db'},
+  {c:'MT-GPO-LEG-TARTO',n:'Tartószerkezet szerelés',e:'db'},
+  {c:'MT-GPO-LEG-KOTELFOG',n:'Befogó / horgonyzó felszerelés',e:'db'},
+  {c:'MT-GPO-LEG-SPLIT',n:'Splitter beépítés léges házban',e:'db'},
+  {c:'MT-GPO-LEG-BEKOTES',n:'Bekötés a légvezetékről',e:'db'},
+  {c:'MT-GPO-LEG-NYOMV',n:'Nyomvonal felmérés (lég)',e:'óra'},
+],
+gpon_leges_kabel:[
+  {c:'GPO-ADSS-12',n:'ADSS optikai kábel 12 szálas léges',e:'m'},
+  {c:'GPO-ADSS-24',n:'ADSS optikai kábel 24 szálas léges',e:'m'},
+  {c:'GPO-FIG8-12',n:'Figure-8 önhordó optikai kábel 12 sz.',e:'m'},
+  {c:'GPO-FIG8-24',n:'Figure-8 önhordó optikai kábel 24 sz.',e:'m'},
+  {c:'GPO-DTAF-8',n:'Aerial drop kábel SM 8 szálas DTAF',e:'m'},
+],
+gpon_leges_csatlakozo:[
+  {c:'CST-SCAPC-LEG',n:'SC/APC léges csatlakozó IP67',e:'db'},
+  {c:'CST-ADSS-BEFOG',n:'ADSS kábel feszítőbefogó 3kN',e:'db'},
+  {c:'CST-FIG8-KLIP',n:'Figure-8 kábel tartóklip poliamid',e:'db'},
+  {c:'CST-ADSS-HURO',n:'Tartóhurok klip ADSS kábel szerelő',e:'db'},
+  {c:'CST-ROG-ANCHBLT',n:'Horgonyzó csavar és anya M10',e:'db'},
+],
+gpon_leges_passziv:[
+  {c:'SPL-1X4-LEG',n:'1×4 PLC splitter léges ház IP65',e:'db'},
+  {c:'SPL-1X8-LEG',n:'1×8 PLC splitter léges ház IP65',e:'db'},
+  {c:'FDB-LEG-8',n:'Léges FDB csomópont ház 8 porthoz',e:'db'},
+  {c:'FDB-LEG-16',n:'Léges FDB csomópont ház 16 porthoz',e:'db'},
+  {c:'PAS-JKT-TOLD',n:'Légközi optikai toldókazetta',e:'db'},
+],
+gpon_leges_aktiv:[
+  {c:'AKT-ONT-KULT',n:'GPON ONT kültéri ház IP65 1GE+WiFi',e:'db'},
+  {c:'AKT-ONU-KULT',n:'ONU kültéri szerelhető talpra 1GE',e:'db'},
+],
+};
+
+// ── Editor state ──
+let editorState = { type: 'hibajav', tech: 'hfc', place: 'leges', cat: 'munkatetel', added: [] };
+function edKey(cat) { return editorState.tech + '_' + editorState.place + '_' + cat; }
+
+function getCurList() {
+  const q = document.getElementById('srch-ed').value.toLowerCase().trim();
+  const all = M[edKey(editorState.cat)] || [];
+  return q ? all.filter(m => m.n.toLowerCase().includes(q) || m.c.toLowerCase().includes(q)) : all;
+}
+
+// ── Type picker ──
+function setType(b) {
+  const cfg = {
+    hibajav: { lbl: 'Hibajavítás', ic: 'ti-alert-triangle', bdg: 'badge-danger' },
+    letesit: { lbl: 'Létesítés',   ic: 'ti-plus',           bdg: 'badge-info' },
+    belso:   { lbl: 'Belső',        ic: 'ti-building',       bdg: 'badge-neutral' },
+  };
+  editorState.type = b;
+  document.getElementById('type-display').textContent = cfg[b].lbl;
+}
+
+function setTT(b) {
+  const isV = b === 'vallalkozo';
+  document.getElementById('tt-name').textContent = isV ? 'Kovács Hálózatépítő Kft.' : 'Kiss János';
+}
+
+// ── Filters ──
+function setFilter(b, axis) {
+  const gid = axis === 'tech' ? 'tech-g' : 'place-g';
+  document.querySelectorAll('#' + gid + ' .pill').forEach(x => x.className = 'pill');
+  if (axis === 'tech') {
+    editorState.tech = b.dataset.tech;
+    b.className = 'pill ' + (editorState.tech === 'hfc' ? 'active-warn' : 'active-purple');
+  } else {
+    editorState.place = b.dataset.pl;
+    b.className = 'pill active-purple';
+  }
+  updFS(); updCnts(); renderList();
+}
+
+function updFS() {
+  const tl = { hfc: 'HFC', gpon: 'GPON' }, pl = { fold: 'Földalatti', leges: 'Légkábeles' };
+  document.getElementById('fsum').innerHTML = '<i class="ti ti-filter"></i> ' + tl[editorState.tech] + ' \u00b7 ' + pl[editorState.place] + ' \u2013 anyaglista sz\u0171rve';
+}
+
+// ── Category tabs ──
+function updCnts() {
+  ['munkatetel', 'kabel', 'csatlakozo', 'passziv', 'aktiv'].forEach(c => {
+    const el = document.getElementById('cnt-' + c);
+    if (el) el.textContent = (M[edKey(c)] || []).length;
+  });
+}
+
+function setCat(b) {
+  document.querySelectorAll('#cat-tabs .tab-btn').forEach(x => x.classList.remove('ta'));
+  b.classList.add('ta'); editorState.cat = b.dataset.cat;
+  document.getElementById('srch-ed').value = ''; renderList();
+}
+
+// ── Material list render ──
+function renderList() {
+  const items = getCurList();
+  const wrap = document.getElementById('mat-list');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="empty-s"><i class="ti ti-inbox"></i>Nincs anyag a sz\u0171r\u00e9si felt\u00e9telekre.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(m =>
+    '<div class="mat-item" onclick="toggleRow(event,\'' + m.c + '\')">'
+    + '<input type="checkbox" id="chk-' + m.c + '" onclick="event.stopPropagation()">'
+    + '<div><div class="mat-c">' + m.c + '</div><div class="mat-n">' + m.n + '</div></div>'
+    + '<div class="qty-grp">'
+    + '<input type="number" class="qty-f" id="qty-' + m.c + '" value="1" min="0.1" step="0.1" onclick="event.stopPropagation()">'
+    + '<span class="qty-unit">' + m.e + '</span></div></div>'
+  ).join('');
+}
+
+function toggleRow(e, code) {
+  const chk = document.getElementById('chk-' + code);
+  if (chk) chk.checked = !chk.checked;
+}
+
+// ── Add selected ──
+function addSel() {
+  const items = getCurList(); let n = 0;
+  items.forEach(m => {
+    const chk = document.getElementById('chk-' + m.c);
+    if (chk && chk.checked) {
+      const qv = parseFloat(document.getElementById('qty-' + m.c)?.value) || 1;
+      const ex = editorState.added.find(a => a.c === m.c);
+      if (ex) ex.qty = parseFloat((ex.qty + qv).toFixed(2));
+      else editorState.added.push({ c: m.c, n: m.n, e: m.e, qty: qv, tech: editorState.tech, place: editorState.place });
+      chk.checked = false; n++;
+    }
+  });
+  if (n > 0) { renderAdded(); showN(n + ' anyag sikeresen hozz\u00e1adva', false); }
+  else showN('Nincs kijel\u00f6lt anyag a hozz\u00e1ad\u00e1shoz', true);
+}
+
+function delAdded(c) { editorState.added = editorState.added.filter(a => a.c !== c); renderAdded(); }
+
+function clearAll() {
+  if (!editorState.added.length) return;
+  editorState.added = [];
+  renderAdded();
+  showN('A lista t\u00f6r\u00f6lve.', true);
+}
+
+// ── Render added table ──
+function renderAdded() {
+  const n = editorState.added.length;
+  const cntEl = document.getElementById('add-cnt');
+  cntEl.textContent = n ? '(' + n + ' t\u00e9tel)' : '';
+  const totEl = document.getElementById('tot-info');
+  totEl.innerHTML = n ? '\u00d6sszesen: <strong>' + n + ' t\u00e9tel</strong>' : '0 t\u00e9tel';
+  const wrap = document.getElementById('added-wrap');
+  if (!n) {
+    wrap.innerHTML = '<div class="empty-s"><i class="ti ti-package"></i>M\u00e9g nincs felvett anyag.<br>Jel\u00f6ld ki az anyagot, adj meg mennyis\u00e9get, majd kattints a <strong>Hozz\u00e1ad</strong> gombra.</div>';
+    return;
+  }
+  const tb = { hfc: '<span class="mbadge mbadge-hfc">HFC</span>', gpon: '<span class="mbadge mbadge-gpon">GPON</span>' };
+  const pb = { fold: '<span class="mbadge mbadge-fd">Fd.</span>', leges: '<span class="mbadge mbadge-lg">Lg.</span>' };
+  wrap.innerHTML = '<table class="added-tbl"><thead><tr>'
+    + '<th style="width:38%">Megnevez\u00e9s</th>'
+    + '<th style="width:20%">Cikksz\u00e1m</th>'
+    + '<th style="width:14%;text-align:center">Tech. / Elh.</th>'
+    + '<th style="width:10%;text-align:right">Mennyi.</th>'
+    + '<th style="width:7%;text-align:center">Egys.</th>'
+    + '<th style="width:11%;text-align:center">T\u00f6r\u00f6l</th>'
+    + '</tr></thead><tbody>'
+    + editorState.added.map(a => '<tr>'
+      + '<td>' + a.n + '</td>'
+      + '<td class="ck">' + a.c + '</td>'
+      + '<td style="text-align:center;display:flex;gap:4px;align-items:center;justify-content:center">' + tb[a.tech] + ' ' + pb[a.place] + '</td>'
+      + '<td class="qnum">' + a.qty + '</td>'
+      + '<td style="text-align:center;color:var(--txt3);font-size:12px">' + a.e + '</td>'
+      + '<td style="text-align:center"><button class="btn-danger-ghost" onclick="delAdded(\'' + a.c + '\')"><i class="ti ti-trash" style="font-size:13px"></i></button></td>'
+      + '</tr>').join('')
+    + '</tbody></table>';
+}
+
+// ── Save ──
+function saveMl() {
+  if (!editorState.added.length) { showN('Nincs felvett anyag – a mentés nem lehetséges.', true); return; }
+  const mn = document.getElementById('mnszam-display').textContent || 'ismeretlen';
+  showN('Munkalap ' + mn + ' mentve (' + editorState.added.length + ' tétel)', false);
+}
+
+// ── Save & close ──
+function saveAndClose() {
+  if (!editorState.added.length) { showN('Nincs felvett anyag – a mentés nem lehetséges.', true); return; }
+  document.getElementById('close-modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('close-modal').classList.remove('show');
+}
+
+function confirmClose() {
+  const mn = document.getElementById('mnszam-display').textContent || 'ismeretlen';
+  showN('Munkalap ' + mn + ' lezárva (' + editorState.added.length + ' tétel)', false);
+  closeModal();
+}
+
+// ── Refresh editor ──
+function refreshEditor() {
+  const today = new Date();
+  const y = today.getFullYear(), m = String(today.getMonth() + 1).padStart(2, '0'), d = String(today.getDate()).padStart(2, '0');
+  document.getElementById('hdr-date').textContent = y + '-' + m + '-' + d;
+  if (typeof editorState === 'object' && editorState.type) setType(editorState.type);
+  updCnts(); renderList(); renderAdded();
+  showN('Adatok frissítve.', false);
+}
+
+// ── Init editor ──
+function initEditor() {
+  const today = new Date();
+  const y = today.getFullYear(), m = String(today.getMonth() + 1).padStart(2, '0'), d = String(today.getDate()).padStart(2, '0');
+  const iso = y + '-' + m + '-' + d, dot = y + '. ' + m + '. ' + d + '.';
+  document.getElementById('hdr-date').textContent = iso;
+  document.getElementById('datum-display').textContent = dot;
+  document.getElementById('ugyfel-display').textContent = 'Németh Judit Irén';
+  // Reset state
+  editorState = { type: 'hibajav', tech: 'hfc', place: 'leges', cat: 'munkatetel', added: [] };
+  // Reset tech pills
+  document.querySelectorAll('#tech-g .pill').forEach(x => x.className = 'pill');
+  document.querySelector('#tech-g .pill[data-tech="hfc"]').className = 'pill active-warn';
+  document.querySelector('#tech-g .pill[data-tech="gpon"]').className = 'pill';
+  // Reset place pills
+  document.querySelectorAll('#place-g .pill').forEach(x => x.className = 'pill');
+  document.querySelector('#place-g .pill[data-pl="fold"]').className = 'pill';
+  document.querySelector('#place-g .pill[data-pl="leges"]').className = 'pill active-purple';
+  // Reset category tab
+  document.querySelectorAll('#cat-tabs .tab-btn').forEach(x => x.classList.remove('ta'));
+  document.querySelector('#cat-tabs .tab-btn[data-cat="munkatetel"]').classList.add('ta');
+  editorState.cat = 'munkatetel';
+  document.getElementById('srch-ed').value = '';
+  setType('hibajav');
+  setTT('vallalkozo');
+  updFS(); updCnts(); renderList(); renderAdded();
+}
+
+// ── Init app ──
+function initApp() {
+  setLogos();
+  const p = new URLSearchParams(location.search);
+  const id = p.get('munkalap');
+  if (id) {
+    openMunkalap(id);
+  } else {
+    document.getElementById('view-list').style.display = '';
+    loadData();
+  }
+}
+
+// ── DOMContentLoaded ──
+document.addEventListener('DOMContentLoaded', async function() {
+  const handled = await handleRedirect();
+  if (!handled) {
+    trySilentLogin(); setLogos();
+  }
+});
+
 </script>
 </body>
 </html>
